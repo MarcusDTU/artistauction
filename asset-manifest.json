@@ -1,16 +1,16 @@
 {
   "files": {
-    "main.css": "/%7Bartistauction%7D/static/css/main.f855e6bc.css",
-    "main.js": "/%7Bartistauction%7D/static/js/main.3c329a26.js",
-    "static/js/453.b2c65378.chunk.js": "/%7Bartistauction%7D/static/js/453.b2c65378.chunk.js",
-    "static/media/logo.svg": "/%7Bartistauction%7D/static/media/logo.6ce24c58023cc2f8fd88fe9d219db6c6.svg",
-    "index.html": "/%7Bartistauction%7D/index.html",
-    "main.f855e6bc.css.map": "/%7Bartistauction%7D/static/css/main.f855e6bc.css.map",
-    "main.3c329a26.js.map": "/%7Bartistauction%7D/static/js/main.3c329a26.js.map",
-    "453.b2c65378.chunk.js.map": "/%7Bartistauction%7D/static/js/453.b2c65378.chunk.js.map"
+    "main.css": "/artistauction/static/css/main.f855e6bc.css",
+    "main.js": "/artistauction/static/js/main.f709f563.js",
+    "static/js/453.b2c65378.chunk.js": "/artistauction/static/js/453.b2c65378.chunk.js",
+    "static/media/logo.svg": "/artistauction/static/media/logo.6ce24c58023cc2f8fd88fe9d219db6c6.svg",
+    "index.html": "/artistauction/index.html",
+    "main.f855e6bc.css.map": "/artistauction/static/css/main.f855e6bc.css.map",
+    "main.f709f563.js.map": "/artistauction/static/js/main.f709f563.js.map",
+    "453.b2c65378.chunk.js.map": "/artistauction/static/js/453.b2c65378.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.f855e6bc.css",
-    "static/js/main.3c329a26.js"
+    "static/js/main.f709f563.js"
   ]
 }
