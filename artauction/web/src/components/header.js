@@ -25,7 +25,7 @@ const Header = () => {
             onClick={() => alert('Login functionality to be implemented')}
              >
           <AccountCircle className="login-icon" sx={{ fontSize: 25 }} />
-        <Typography className="login-text" sx={{ fontSize: 13 }} variant="body1">Login</Typography>
+        <Typography className="login-text" sx={{ fontSize: 13 }} variant="body1">Log in</Typography>
         </Box>
       </Toolbar>
     </AppBar>
