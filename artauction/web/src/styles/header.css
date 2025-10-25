@@ -14,28 +14,30 @@
   height: 60px;
 }
 
-.login-container {
+.nav-actions { 
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  gap: 16px;
+}
+
+.nav-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-left: auto;
   padding: 3px 6px;
   border-radius: 8px;
   transition: all 0.3s ease;
   cursor: pointer;
 }
 
-.login-icon {
-  font-size: 25px !important;
-  transition: color 0.3s ease;
-}
+.nav-icon { font-size: 22px !important; transition: color 0.3s ease; }
 
-.login-text {
-  font-size: 13px;
-  transition: color 0.3s ease;
-}
+.nav-text { font-size: 13px; transition: color 0.3s ease; }
 
-.login-container:hover .login-icon,
-.login-container:hover .login-text {
-  color: #2e7516;
-}
+.nav-item:hover .nav-icon,
+.nav-item:hover .nav-text { color: #2e7516; }
+
+/* Anchor reset for nav link */
+.nav-link { text-decoration: none; color: inherit; }
+.nav-link:visited { color: inherit; }

@@ -15,6 +15,12 @@ describe('Header', () => {
     expect(screen.getByText(/log in/i)).toBeInTheDocument();
   });
 
+  test('has a Home link to root', () => {
+    render(<Header />);
+    const home = screen.getByRole('link', { name: /home/i });
+    expect(home).toHaveAttribute('href', '/');
+  });
+
   test('clicking login triggers alert', () => {
     const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
     render(<Header />);
