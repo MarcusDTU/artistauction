@@ -28,32 +28,32 @@
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: 16px; /* unify pill radius for all */
   transition: all 0.3s ease;
   cursor: pointer;
 }
+
 
 .nav-icon { font-size: 22px !important; transition: color 0.3s ease; }
 
 .nav-text { font-size: 13px; transition: color 0.3s ease; }
 
+/* Default state: dark green text/icon for both buttons */
+.nav-item .nav-icon,
+.nav-item .nav-text { color: #44543f; }
+
+.nav-item:hover {
+  background-color: #d4e8d7; /* same hover bg for both */
+  box-shadow: none;
+}
 .nav-item:hover .nav-icon,
-.nav-item:hover .nav-text { color: #2e7516; }
+.nav-item:hover .nav-text { color: #44543f; }
 
 /* Anchor reset for nav link */
 .nav-link { text-decoration: none; color: inherit; }
 .nav-link:visited { color: inherit; }
 
-/* Login pill styling */
-.nav-item.login {
-  background: #dfeee0;
-  border-radius: 16px;
-  padding: 6px 12px;
-}
+/* Login specific spacing (optional) */
+.nav-item.login { padding: 6px 12px; }
 .nav-item.login .nav-icon,
-.nav-item.login .nav-text {
-  color: #2e7516;
-}
-.nav-item.login:hover {
-  filter: brightness(0.98);
-}
+.nav-item.login .nav-text { color: inherit; }
