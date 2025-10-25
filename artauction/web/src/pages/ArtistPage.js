@@ -1,0 +1,1 @@
+//TODO: Make artist page that shows the artist's profile, their artworks, and upcoming auctions featuring their work.
