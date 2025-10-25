@@ -1,5 +1,5 @@
 import React from "react";
-import AccountCircle from '@mui/icons-material/AccountCircle';
+import PersonOutline from '@mui/icons-material/PersonOutline';
 import HomeOutlined from '@mui/icons-material/HomeOutlined';
 import logo from '../assets/logo.png';
 import { AppBar, Toolbar, Typography, Box } from '@mui/material';
@@ -21,11 +21,11 @@ const Header = () => {
             <Typography className="nav-text" variant="body1">Home</Typography>
           </Box>
           <Box
-            className="nav-item"
+            className="nav-item login"
             onClick={() => alert('Login functionality to be implemented')}
           >
-            <AccountCircle className="nav-icon login-icon" />
-            <Typography className="nav-text login-text" variant="body1">Log in</Typography>
+            <PersonOutline className="nav-icon" />
+            <Typography className="nav-text" variant="body1">Log in</Typography>
           </Box>
         </Box>
       </Toolbar>

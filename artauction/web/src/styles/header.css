@@ -6,8 +6,8 @@
 }
 
 .header-toolbar {
-  padding-top: 4px;
-  padding-bottom: 4px;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .header-logo {
@@ -19,13 +19,15 @@
   align-items: center;
   margin-left: auto;
   gap: 16px;
+  margin-right: 32px; /* move a bit left from the edge */
 }
 
 .nav-item {
   display: flex;
-  flex-direction: column;
+  flex-direction: row; /* icon left of text */
   align-items: center;
-  padding: 3px 6px;
+  gap: 8px;
+  padding: 6px 8px;
   border-radius: 8px;
   transition: all 0.3s ease;
   cursor: pointer;
@@ -41,3 +43,17 @@
 /* Anchor reset for nav link */
 .nav-link { text-decoration: none; color: inherit; }
 .nav-link:visited { color: inherit; }
+
+/* Login pill styling */
+.nav-item.login {
+  background: #dfeee0;
+  border-radius: 16px;
+  padding: 6px 12px;
+}
+.nav-item.login .nav-icon,
+.nav-item.login .nav-text {
+  color: #2e7516;
+}
+.nav-item.login:hover {
+  filter: brightness(0.98);
+}
