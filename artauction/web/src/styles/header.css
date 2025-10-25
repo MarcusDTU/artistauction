@@ -1,0 +1,41 @@
+/* Header component styles */
+
+.header-appbar {
+  background-color: #e5ebe4 !important;
+  color: #44543f !important;
+}
+
+.header-toolbar {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.header-logo {
+  height: 60px;
+}
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-left: auto;
+  padding: 3px 6px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.login-icon {
+  font-size: 25px !important;
+  transition: color 0.3s ease;
+}
+
+.login-text {
+  font-size: 13px;
+  transition: color 0.3s ease;
+}
+
+.login-container:hover .login-icon,
+.login-container:hover .login-text {
+  color: #2e7516;
+}
