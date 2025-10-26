@@ -21,13 +21,19 @@ describe('Header', () => {
     expect(home).toHaveAttribute('href', '/');
   });
 
-  test('clicking login triggers alert', () => {
-    const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
-    render(<Header />);
+  test('clicking login calls provided onLogin', () => {
+    const onLogin = jest.fn();
+    render(<Header onLogin={onLogin} />);
 
     fireEvent.click(screen.getByText(/log in/i));
-    expect(alertSpy).toHaveBeenCalledWith('Login functionality to be implemented');
+    expect(onLogin).toHaveBeenCalled();
+  });
 
-    alertSpy.mockRestore();
+  test('clicking login without handler updates hash to login', () => {
+    render(<Header />);
+    // Ensure starting state
+    window.location.hash = '';
+    fireEvent.click(screen.getByText(/log in/i));
+    expect(window.location.hash).toBe('#/login');
   });
 });

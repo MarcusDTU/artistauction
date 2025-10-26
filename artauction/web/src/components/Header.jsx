@@ -5,7 +5,7 @@ import logo from '../assets/logo.png';
 import { AppBar, Toolbar, Typography, Box } from '@mui/material';
 import '../styles/header.css';
 
-const Header = () => {
+const Header = ({ onLogin }) => {
   return (
     <AppBar position="static" className="header-appbar">
       <Toolbar className="header-toolbar">
@@ -22,7 +22,13 @@ const Header = () => {
           </Box>
           <Box
             className="nav-item login"
-            onClick={() => alert('Login functionality to be implemented')}
+            onClick={() => {
+              if (typeof onLogin === 'function') {
+                onLogin();
+              } else {
+                window.location.hash = '#/login';
+              }
+            }}
           >
             <PersonOutline className="nav-icon" />
             <Typography className="nav-text" variant="body1">Log in</Typography>
