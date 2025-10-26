@@ -12,6 +12,12 @@
 
 .header-logo {
   height: 60px;
+  width: auto;
+  display: block;
+  margin-right: 16px;
+  object-fit: contain;
+  /* Improve visibility if the logo is light on a light header */
+  filter: drop-shadow(0 0 1px rgba(0,0,0,0.35));
 }
 
 .nav-actions { 
