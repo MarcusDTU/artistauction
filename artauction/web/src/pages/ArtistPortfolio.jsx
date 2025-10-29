@@ -1,6 +1,6 @@
-// File: `artauction/web/src/pages/ArtistPortfolio.jsx`
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState , useRef} from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import PreviewArtworkList from '../components/PreviewArtworkList';
 
 const ArtistPortfolio = () => {
   const { artistId } = useParams();
@@ -9,6 +9,8 @@ const ArtistPortfolio = () => {
   const [artist, setArtist] = useState(location.state?.artist || null);
   const [loading, setLoading] = useState(!artist);
   const [error, setError] = useState(null);
+  const [notice, setNotice] = useState(null);
+  const timeoutRef = useRef(null);
 
   useEffect(() => {
     if (!artist && artistId) {
@@ -23,6 +25,19 @@ const ArtistPortfolio = () => {
         .finally(() => setLoading(false));
     }
   }, [artist, artistId]);
+
+  useEffect(() => {
+        return () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        };
+    }, []);
+
+    const handleSelectArtwork = (art) => {
+        // show a temporary notice; adjust message as desired
+        setNotice(`Feature not yet implemented — viewing "${art.title || 'Untitled'}"`);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => setNotice(null), 3500);
+    };
 
   if (loading) return <div>Loading artist…</div>;
   if (error) return <div>Error: {error}</div>;
@@ -40,29 +55,23 @@ const ArtistPortfolio = () => {
         <h1 style={{ margin: 0 }}>{artist.name}</h1>
       </header>
 
-      <main style={{ padding: '1rem' }}>
-        <section>
-          <h2>About</h2>
-          <p>{artist.bio || 'No bio available.'}</p>
-        </section>
+        <main style={{ padding: '1rem' }}>
+            {notice && (
+                <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', background: '#fffae6', border: '1px solid #f5e6a6', borderRadius: 6 }}>
+                    {notice}
+                </div>
+            )}
 
-        <section>
-          <h2>Artworks</h2>
-          {artist.artworks && artist.artworks.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-              {artist.artworks.map((art) => (
-                <article key={art.id} style={{ border: '1px solid #ddd', padding: '0.5rem' }}>
-                  <img src={art.imageUrl} alt={art.title} style={{ width: '100%', height: 150, objectFit: 'cover' }} />
-                  <h3 style={{ margin: '0.5rem 0 0 0' }}>{art.title}</h3>
-                  <p style={{ margin: 0 }}>{art.year}</p>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p>No artworks found.</p>
-          )}
-        </section>
-      </main>
+            <section>
+                <h2>About</h2>
+                <p>{artist.bio || 'No bio available.'}</p>
+            </section>
+
+            <section>
+                <h2>Artworks</h2>
+                    <PreviewArtworkList artworks={artist.artworks} onSelect={handleSelectArtwork} />
+            </section>
+        </main>
     </div>
   );
 };
