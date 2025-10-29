@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 import '../styles/artists.css';
+import { Link } from 'react-router-dom';
 
 const artists = [
   {
@@ -33,6 +34,11 @@ const FeaturedArtists = () => {
 
       <Box className="artists-grid">
         {artists.map((artist) => (
+            <Link
+                to={`/artist/${artist.id}`}
+                state={{ artist }}
+                style={{ textDecoration: 'none', color: 'inherit' }}
+            >
           <Box key={artist.id} className="artist-card" data-testid={`artist-${artist.id}`}>
             <img
               className="artist-avatar"
@@ -41,6 +47,7 @@ const FeaturedArtists = () => {
             />
             <Typography variant="h6" className="artist-name">{artist.name}</Typography>
           </Box>
+      </Link>
         ))}
       </Box>
     </Box>
