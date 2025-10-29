@@ -1,23 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import ArtistPortfolio from "./pages/ArtistPortfolio";
 
 const App = () => {
-  const getRoute = () => (window.location.hash || '#/home');
-  const [route, setRoute] = useState(getRoute());
-
-  useEffect(() => {
-    const onHashChange = () => setRoute(getRoute());
-    window.addEventListener('hashchange', onHashChange);
-    return () => window.removeEventListener('hashchange', onHashChange);
-  }, []);
-
   return (
-    <div>
-      <Header />
-      {route === '#/login' ? <Login /> : <Home />}
-    </div>
+      <Router>
+          <Header />
+          <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/artist/:artistId" element={<ArtistPortfolio />} />
+              <Route path="*" element={<Home />} />
+          </Routes>
+      </Router>
   );
 };
 
