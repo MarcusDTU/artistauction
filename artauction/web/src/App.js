@@ -1,7 +1,12 @@
 import logo from './logo.svg';
 import './App.css';
+import BidButton from "./bidButton";
 
 function App() {
+    const handleBid = (num) => {
+        alert(`Bid submitted: ${num}`);
+        console.log("Bid submitted:", num);
+    }
   return (
     <div className="App">
       <header className="App-header">
@@ -17,7 +22,7 @@ function App() {
         >
           Learn React
         </a>
-        <button>Login</button>
+        <BidButton onSubmit={handleBid}/>
       </header>
     </div>
   );
