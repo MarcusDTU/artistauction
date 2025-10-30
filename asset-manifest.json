@@ -1,8 +1,9 @@
 {
   "files": {
-    "main.css": "/artistauction/static/css/main.c67f00db.css",
-    "main.js": "/artistauction/static/js/main.8b5c2bda.js",
+    "main.css": "/artistauction/static/css/main.7d80e7ba.css",
+    "main.js": "/artistauction/static/js/main.5d71cefa.js",
     "static/js/453.b2c65378.chunk.js": "/artistauction/static/js/453.b2c65378.chunk.js",
+    "static/media/logo.png": "/artistauction/static/media/logo.04deb905e494993e795e.png",
     "static/media/roboto-latin-700-normal.woff2": "/artistauction/static/media/roboto-latin-700-normal.3d32572dd5951c418e5b.woff2",
     "static/media/roboto-latin-500-normal.woff2": "/artistauction/static/media/roboto-latin-500-normal.599f66a60bdf974e578e.woff2",
     "static/media/roboto-latin-300-normal.woff2": "/artistauction/static/media/roboto-latin-300-normal.db56943a88e4852343ae.woff2",
@@ -71,18 +72,17 @@
     "static/media/roboto-greek-ext-400-normal.woff2": "/artistauction/static/media/roboto-greek-ext-400-normal.2d5875b032a1cca91eb2.woff2",
     "static/media/roboto-greek-ext-700-normal.woff2": "/artistauction/static/media/roboto-greek-ext-700-normal.eb28a447335ba6d54fcb.woff2",
     "static/media/roboto-greek-ext-300-normal.woff2": "/artistauction/static/media/roboto-greek-ext-300-normal.a88b77bb10633a8045e3.woff2",
-    "static/media/logo.svg": "/artistauction/static/media/logo.6ce24c58023cc2f8fd88fe9d219db6c6.svg",
     "static/media/roboto-greek-ext-400-normal.woff": "/artistauction/static/media/roboto-greek-ext-400-normal.85384e1ce5cc0ef0c609.woff",
     "static/media/roboto-greek-ext-500-normal.woff": "/artistauction/static/media/roboto-greek-ext-500-normal.2b2e1b55c141371f1d4c.woff",
     "static/media/roboto-greek-ext-300-normal.woff": "/artistauction/static/media/roboto-greek-ext-300-normal.37b1aa837fdc41df2036.woff",
     "static/media/roboto-greek-ext-700-normal.woff": "/artistauction/static/media/roboto-greek-ext-700-normal.f54f1cebdcefe4af6446.woff",
     "index.html": "/artistauction/index.html",
-    "main.c67f00db.css.map": "/artistauction/static/css/main.c67f00db.css.map",
-    "main.8b5c2bda.js.map": "/artistauction/static/js/main.8b5c2bda.js.map",
+    "main.7d80e7ba.css.map": "/artistauction/static/css/main.7d80e7ba.css.map",
+    "main.5d71cefa.js.map": "/artistauction/static/js/main.5d71cefa.js.map",
     "453.b2c65378.chunk.js.map": "/artistauction/static/js/453.b2c65378.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.c67f00db.css",
-    "static/js/main.8b5c2bda.js"
+    "static/css/main.7d80e7ba.css",
+    "static/js/main.5d71cefa.js"
   ]
 }
