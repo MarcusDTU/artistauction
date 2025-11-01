@@ -53,11 +53,9 @@ describe('Login page', () => {
     expect(link).toHaveAttribute('href', '#/forgot');
   });
 
-  test('contact support link renders and is clickable', () => {
+  test('Back to Home link is present on the page container', () => {
     render(<Login />);
-    const link = screen.getByRole('link', { name: /contact support/i });
-    expect(link).toBeInTheDocument();
-    // Click to exercise onClick preventDefault handler
-    link.click();
+    const back = screen.getByRole('link', { name: /back to home/i });
+    expect(back).toHaveAttribute('href', '#/home');
   });
 });
