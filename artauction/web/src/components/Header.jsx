@@ -13,7 +13,7 @@ const Header = ({ onLogin }) => {
         <Box className="nav-actions">
           <Box
             component="a"
-            href="/"
+            href="#/home"
             aria-label="Go to Home"
             className="nav-item nav-link"
           >
