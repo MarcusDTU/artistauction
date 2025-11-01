@@ -15,10 +15,10 @@ describe('Header', () => {
     expect(screen.getByText(/log in/i)).toBeInTheDocument();
   });
 
-  test('has a Home link to root', () => {
+  test('has a Home link to #/home (GitHub Pages-safe)', () => {
     render(<Header />);
     const home = screen.getByRole('link', { name: /home/i });
-    expect(home).toHaveAttribute('href', '/');
+    expect(home).toHaveAttribute('href', '#/home');
   });
 
   test('clicking login calls provided onLogin', () => {
