@@ -63,22 +63,11 @@
   font-size: 13px;
 }
 
-.input-wrapper {
-  position: relative;
-}
+.input-wrapper { position: static; }
 
 .input-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
   color: #6b7a69;
-  font-size: 18px !important;
-}
-
-.input-text {
-  padding-left: 36px !important;
-  background: #f8fbf8;
+  font-size: 20px !important;
 }
 
 .login-submit {
