@@ -189,10 +189,6 @@ const Login = () => {
 
         <a className="link-button" href="#/forgot">Forgot password?</a>
       </Box>
-
-      <Typography variant="body2" className="support-note">
-        Need help? <a href="#/support" onClick={(e) => e.preventDefault()}>Contact Support</a>
-      </Typography>
     </div>
   );
 };
