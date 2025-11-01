@@ -12,17 +12,17 @@ describe('Login page', () => {
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 
-  test('submits form and triggers forgot password click', () => {
+  test('submits form and has forgot password link to #/forgot', () => {
     const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
     render(<Login />);
 
-    // Submit form
+    // Submit form (alert is mocked)
     fireEvent.submit(screen.getByRole('button', { name: /sign in/i }).closest('form'));
-
-    // Click forgot password
-    fireEvent.click(screen.getByRole('button', { name: /forgot password/i }));
     expect(alertSpy).toHaveBeenCalled();
     alertSpy.mockRestore();
+
+    const link = screen.getByRole('link', { name: /forgot password/i });
+    expect(link).toHaveAttribute('href', '#/forgot');
   });
 
   test('contact support link renders and is clickable', () => {
