@@ -187,18 +187,8 @@ const Login = () => {
           </form>
         )}
 
-        <button
-          type="button"
-          className="link-button"
-          onClick={() => alert('Forgot password flow is not implemented yet')}
-        >
-          Forgot password?
-        </button>
+        <a className="link-button" href="#/forgot">Forgot password?</a>
       </Box>
-
-      <Typography variant="body2" className="support-note">
-        Need help? <a href="#/support" onClick={(e) => e.preventDefault()}>Contact Support</a>
-      </Typography>
     </div>
   );
 };

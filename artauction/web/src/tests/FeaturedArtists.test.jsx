@@ -22,7 +22,7 @@ describe('FeaturedArtists', () => {
         <FeaturedArtists />
       </MemoryRouter>
     );
-    const names = [/elena martinez/i, /james chen/i, /sophia laurent/i];
+    const names = [/elena martinez/i, /james chen/i, /john laurent/i];
     names.forEach((name) => {
       expect(screen.getByRole('img', { name })).toBeInTheDocument();
       expect(screen.getByText(name)).toBeInTheDocument();
