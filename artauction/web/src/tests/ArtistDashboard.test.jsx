@@ -74,8 +74,10 @@ describe('ArtistDashboard', () => {
         );
     });
 
-    test('Upload button shows alert', () => {
-        const alertMock = jest.spyOn(window, 'alert').mockImplementation(() => {});
+    test('Upload button navigates to upload page', () => {
+        const rr = require('react-router-dom');
+        const navigateMock = jest.fn();
+        rr.useNavigate.mockReturnValue(navigateMock);
 
         renderWithRouter(<ArtistDashboard />);
         const uploadButtons = screen.getAllByLabelText('Upload new artwork');
@@ -83,8 +85,6 @@ describe('ArtistDashboard', () => {
 
         fireEvent.click(uploadButtons[0]);
 
-        expect(alertMock).toHaveBeenCalledWith('Upload feature not implemented yet');
-
-        alertMock.mockRestore();
+        expect(navigateMock).toHaveBeenCalledWith('/upload-artwork');
     });
 });

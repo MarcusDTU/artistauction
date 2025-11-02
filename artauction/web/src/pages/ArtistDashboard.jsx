@@ -21,8 +21,7 @@ const ArtistDashboard = () => {
     };
 
     const handleUpload = () => {
-        console.warn('handleUpload() not implemented');
-        alert('Upload feature not implemented yet');
+        navigate('/upload-artwork');
     }
 
     const styles = {

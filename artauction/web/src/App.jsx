@@ -8,6 +8,7 @@ import ArtistPortfolio from "./pages/ArtistPortfolio";
 import ArtworkPage from "./pages/ArtworkPage";
 import ArtistDashboard from "./pages/ArtistDashboard";
 import EditArtwork from "./pages/EditArtwork";
+import UploadArtwork from "./pages/UploadArtwork";
 
 const App = () => {
   return (
@@ -20,6 +21,7 @@ const App = () => {
               <Route path="/artworks/:artworkId" element={<ArtworkPage />} />
               <Route path="/dashboard" element={<ArtistDashboard />} />
               <Route path="/edit-artwork/:artworkId" element={<EditArtwork />} />
+              <Route path="/upload-artwork" element={<UploadArtwork />} />
               <Route path="*" element={<Home />} />
           </Routes>
       </Router>
