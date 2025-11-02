@@ -1,32 +1,23 @@
 import React, {useState} from 'react';
-
-const mockArtworks = [
-    {
-        id: 1,
-        title: 'Sunset Over Lake',
-        imageUrl: 'https://images.unsplash.com/vector-1751914322815-32930cd495b9?q=80&w=400&auto=format&fit=crop',
-        status: 'public'
-    },
-    {
-        id: 2,
-        title: 'Blue Portrait',
-        imageUrl: 'https://images.unsplash.com/vector-1738236597535-1e80f2c2af1c?q=80&w=400&auto=format&fit=crop',
-        status: 'private'
-    },
-    {
-        id: 3,
-        title: 'City Lights',
-        imageUrl: 'https://images.unsplash.com/vector-1752217168020-7c56583af863?q=80&w=400&auto=format&fit=crop',
-        status: 'public'
-    }
-];
+import { useNavigate } from 'react-router-dom';
+import { SAMPLE_ARTWORKS } from '../assets/SampleArtwork';
 
 const ArtistDashboard = () => {
-    const [artworks] = useState(mockArtworks);
+
+    const [artworks] = useState(() => {
+        let data = SAMPLE_ARTWORKS;
+        if (!Array.isArray(data)) data = [data];
+        return data.map(a => ({
+            ...a,
+            imageUrl: a.imageUrl || a.image || '',
+            title: a.title || a.name || 'Untitled'
+        }));
+    });
+
+    const navigate = useNavigate();
 
     const handleEdit = (id) => {
-        console.warn(`handleEdit(${id}) not implemented`);
-        alert('Edit feature not implemented yet');
+        navigate(`/edit-artwork/${id}`, {state: {artwork: artworks.find(a => a.id === id)}});
     };
 
     const handleUpload = () => {
