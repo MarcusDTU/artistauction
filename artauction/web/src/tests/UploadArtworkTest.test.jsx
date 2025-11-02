@@ -108,4 +108,34 @@ describe('UploadArtwork page', () => {
         expect(descInput.value).toBe('An oil painting of a sunset');
     });
 
+    test('renders NumberBox, accepts positive floats, rejects negatives, and focuses on container click', () => {
+        render(<UploadArtwork />);
+
+        // NumberBox title and elements
+        expect(screen.getByText('Set secret price')).toBeInTheDocument();
+        const nbInput = screen.getByLabelText('Set secret price input');
+
+        // placeholder derived from title
+        expect(screen.getByPlaceholderText('Enter set secret price')).toBeInTheDocument();
+        // hint present
+        expect(screen.getByText('Enter a positive number')).toBeInTheDocument();
+
+        // accept standard float
+        fireEvent.change(nbInput, { target: { value: '19.99' } });
+        expect(nbInput.value).toBe('19.99');
+
+        // accept leading dot
+        fireEvent.change(nbInput, { target: { value: '.75' } });
+        expect(nbInput.value).toBe('.75');
+
+        // negative input should be ignored (value remains the same)
+        fireEvent.change(nbInput, { target: { value: '-3' } });
+        expect(nbInput.value).toBe('.75');
+
+        // clicking the NumberBox container focuses the input
+        const nbContainer = screen.getByRole('group', { name: 'Set secret price' });
+        expect(document.activeElement).not.toBe(nbInput);
+        fireEvent.click(nbContainer);
+        expect(document.activeElement).toBe(nbInput);
+    });
 });

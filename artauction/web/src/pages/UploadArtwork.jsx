@@ -1,5 +1,6 @@
 import React, {useRef, useState, useEffect} from 'react';
 import TextBox from "../components/TextBox";
+import NumberBox from "../components/NumberBox";
 
 const styles = {
     page: {padding: 20, fontFamily: 'Arial, sans-serif', maxWidth: 1000, margin: '0 auto'},
@@ -116,6 +117,7 @@ const UploadArtwork = () => {
                 <TextBox title="Add title" id="art-title"/>
                 <TextBox title="Add description" id="art-description" placeholder="Enter description"
                          hint="Provide an optional description for your artwork"/>
+                <NumberBox title="Set secret price" id="secret-price" hint="Enter a positive number"/>
             </div>
         </div>
 
