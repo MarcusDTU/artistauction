@@ -1,4 +1,5 @@
 import React, {useRef, useState, useEffect} from 'react';
+import { useNavigate } from "react-router-dom";
 import TextBox from "../components/TextBox";
 import NumberBox from "../components/NumberBox";
 
@@ -31,6 +32,24 @@ const styles = {
         border: 'none',
         borderRadius: 6,
         cursor: 'pointer'
+    },
+    textBoxesContainer: { marginTop: 20, display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 640 },
+    actionsContainer: { display: 'flex', gap: 12, marginTop: 20 },
+    saveBtn: {
+        padding: '8px 12px',
+        background: '#10b981',
+        color: '#fff',
+        border: 'none',
+        borderRadius: 6,
+        cursor: 'pointer'
+    },
+    cancelBtn: {
+        padding: '8px 12px',
+        background: '#6b7280',
+        color: '#fff',
+        border: 'none',
+        borderRadius: 6,
+        cursor: 'pointer'
     }
 };
 
@@ -38,6 +57,7 @@ const UploadArtwork = () => {
     const inputRef = useRef(null);
     const [files, setFiles] = useState([]); // { file, url }
     const [hover, setHover] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
         // cleanup object URLs on unmount
@@ -68,6 +88,19 @@ const UploadArtwork = () => {
         files.forEach(f => URL.revokeObjectURL(f.url));
         setFiles([]);
         if (inputRef.current) inputRef.current.value = '';
+    };
+
+    const handleSaveExit = () => {
+        // placeholder: save form data as needed
+        // currently just clears selection and exits UI flow
+        clearSelection();
+        console.log("Save and exit clicked. Implement saving logic as needed.");
+        alert("Save functionality not implemented as there is no backend.");
+    };
+
+    const handleCancelUpload = () => {
+        clearSelection();
+        navigate(-1); // go back to previous page
     };
 
     return (
@@ -119,6 +152,12 @@ const UploadArtwork = () => {
                          hint="Provide an optional description for your artwork"/>
                 <NumberBox title="Set secret price" id="secret-price" hint="Enter a positive number"/>
             </div>
+
+            <div style={styles.actionsContainer}>
+                <button type="button" onClick={handleSaveExit} style={styles.saveBtn}>Save and exit</button>
+                <button type="button" onClick={handleCancelUpload} style={styles.cancelBtn}>Cancel upload</button>
+            </div>
+
         </div>
 
 
