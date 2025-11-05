@@ -1,4 +1,4 @@
-# Artist Auction – Monorepo
+# Artist Auction 
 
 This repository contains the Artist Auction frontend (React + Material UI) under `artauction/web`. It is a Create React App (CRA) project configured with tests and code‑coverage, and is deployable to GitHub Pages.
 
