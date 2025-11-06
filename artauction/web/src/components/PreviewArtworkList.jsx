@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import PreviewArtwork from './PreviewArtwork';
 import { Link } from 'react-router-dom';
-import { SAMPLE_ARTWORK } from '../assets/SampleArtwork';
+import { SAMPLE_ARTWORKS } from '../assets/SampleArtwork';
 
 const gridStyle = {
     display: 'grid',
@@ -24,14 +24,19 @@ const linkStyle = {
 
 const PreviewArtworkList = ({ artworks = [], onSelect }) => {
 
-    const list = Array.isArray(artworks) && artworks.length > 0 ? artworks : [SAMPLE_ARTWORK];
+    const list = Array.isArray(artworks) && artworks.length > 0 ? artworks : SAMPLE_ARTWORKS;
 
     return (
         <section className="preview-artwork-list" style={gridStyle}>
             {list.map((art) => {
                 const id = art.id || art.slug || art.title || 'sample';
                 return (
-                    <Link key={id} to={`/artworks/${encodeURIComponent(id)}`} style={linkStyle}>
+                    <Link
+                        key={id}
+                        to={`/artworks/${encodeURIComponent(id)}`}
+                        state={{art}}
+                        style={linkStyle}
+                    >
                         <PreviewArtwork art={art} />
                     </Link>
                 );

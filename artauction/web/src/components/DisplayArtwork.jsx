@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { SAMPLE_ARTWORK } from "../assets/SampleArtwork";
+import { SAMPLE_ARTWORKS } from "../assets/SampleArtwork";
+import { useParams, useLocation } from "react-router-dom";
 
 const containerStyle = {
   display: 'flex',
@@ -58,34 +59,43 @@ const descStyle = {
 };
 
 const DisplayArtwork = ({ art = {}, imageWidth = 420, style = {}, className }) => {
+    const { id } = useParams();
+    const location = useLocation();
 
-  const displayed = (art && Object.keys(art).length > 0) ? art : SAMPLE_ARTWORK;
+    const stateArt = location && location.state && location.state.art;
 
-  const imageSrc = displayed.image || '';
-  const title = displayed.title || 'Untitled';
-  const artistName = displayed.artist?.name || displayed.artistName || 'Unknown artist';
-  const description = displayed.description || 'No description available.';
+    // priority: explicit prop > router state > id lookup in SAMPLE_ARTWORKS > first sample
+    const displayed = (art && Object.keys(art).length > 0)
+        ? art
+        : (stateArt && Object.keys(stateArt).length > 0)
+            ? stateArt
+            : (id ? SAMPLE_ARTWORKS.find(a => String(a.id) === String(id)) || SAMPLE_ARTWORKS[0] : SAMPLE_ARTWORKS[0]);
 
-  return (
-    <section className={className} style={{ ...containerStyle, ...style }}>
-      <div style={imageWrapper(imageWidth)}>
-        {imageSrc ? (
-          // eslint-disable-next-line jsx-a11y/img-redundant-alt
-          <img src={imageSrc} alt={title} style={imgStyle} />
-        ) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
-            No image
-          </div>
-        )}
-      </div>
+    const imageSrc = displayed.image || displayed.imageUrl || '';
+    const title = displayed.title || 'Untitled';
+    const artistName = displayed.artist?.name || displayed.artistName || 'Unknown artist';
+    const description = displayed.description || 'No description available.';
 
-      <div style={contentStyle}>
-        <h2 style={titleStyle}>{title}</h2>
-        <h3 style={artistStyle}>{artistName}</h3>
-        <p style={descStyle}>{description}</p>
-      </div>
-    </section>
-  );
+    return (
+        <section className={className} style={{ ...containerStyle, ...style }}>
+            <div style={imageWrapper(imageWidth)}>
+                {imageSrc ? (
+                    // eslint-disable-next-line jsx-a11y/img-redundant-alt
+                    <img src={imageSrc} alt={title} style={imgStyle} />
+                ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                        No image
+                    </div>
+                )}
+            </div>
+
+            <div style={contentStyle}>
+                <h2 style={titleStyle}>{title}</h2>
+                <h3 style={artistStyle}>{artistName}</h3>
+                <p style={descStyle}>{description}</p>
+            </div>
+        </section>
+    );
 };
 
 DisplayArtwork.propTypes = {
