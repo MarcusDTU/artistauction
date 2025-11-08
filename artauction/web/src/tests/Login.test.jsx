@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Login from '../pages/Login';
 
@@ -12,8 +12,7 @@ describe('Login page', () => {
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 
-  test('Sign Up tab validates fields and completes happy path', () => {
-    const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+  test('Sign Up tab validates fields and completes happy path', async () => {
     render(<Login />);
 
     // Switch to Sign Up tab
@@ -33,21 +32,19 @@ describe('Login page', () => {
     fireEvent.submit(screen.getByRole('button', { name: /create account/i }).closest('form'));
     expect(screen.getByText(/passwords do not match/i)).toBeInTheDocument();
 
-    // Fix confirm and submit -> should alert success
+    // Fix confirm and submit -> should switch back to Login tab
     fireEvent.change(screen.getByLabelText(/confirm password/i), { target: { value: 'secret123' } });
     fireEvent.submit(screen.getByRole('button', { name: /create account/i }).closest('form'));
-    expect(alertSpy).toHaveBeenCalledWith('Account created (demo)');
-    alertSpy.mockRestore();
+    // After successful signup the component sets tab to 0 (Login)
+    await screen.findByRole('button', { name: /sign in/i });
   });
 
-  test('submits form and has forgot password link to #/forgot', () => {
-    const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+  test('submits form and has forgot password link to #/forgot', async () => {
     render(<Login />);
 
-    // Submit form (alert is mocked)
+    // Submit form and expect navigation to home
     fireEvent.submit(screen.getByRole('button', { name: /sign in/i }).closest('form'));
-    expect(alertSpy).toHaveBeenCalled();
-    alertSpy.mockRestore();
+    await waitFor(() => expect(window.location.hash).toBe('#/home'));
 
     const link = screen.getByRole('link', { name: /forgot password/i });
     expect(link).toHaveAttribute('href', '#/forgot');

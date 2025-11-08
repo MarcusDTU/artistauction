@@ -1,12 +1,33 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Button, TextField, Typography, InputAdornment } from '@mui/material';
 import MailOutline from '@mui/icons-material/MailOutline';
 import '../styles/login.css';
+import { supabase } from '../lib/supabaseClient';
 
 const ForgotPassword = () => {
-  const handleSubmit = (e) => {
+  const [status, setStatus] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert('Password reset link sent (demo)');
+    setStatus('');
+    setError('');
+    setLoading(true);
+    const form = new FormData(e.currentTarget);
+    const email = form.get('email');
+    try {
+      // Use origin+pathname only; Supabase will append recovery tokens in the hash.
+      // App.jsx will detect them and route to #/reset after setting the session.
+      const redirectTo = `${window.location.origin}${window.location.pathname}`;
+      const { error: err } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+      if (err) throw err;
+      setStatus('Check your email for a password reset link.');
+    } catch (e1) {
+      setError(e1.message || 'Failed to send reset link');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -39,9 +60,19 @@ const ForgotPassword = () => {
             }}
           />
 
-          <Button type="submit" className="login-submit" variant="contained">
+          <Button type="submit" className="login-submit" variant="contained" disabled={loading}>
             Send Reset Link
           </Button>
+          {status && (
+            <Typography variant="caption" color="success.main" sx={{ display: 'block', mt: 1 }}>
+              {status}
+            </Typography>
+          )}
+          {error && (
+            <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1 }}>
+              {error}
+            </Typography>
+          )}
         </form>
 
         <button
