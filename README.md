@@ -23,3 +23,25 @@ In `artauction/web/package.json`:
 
 - Install dependencies cleanly:
   - `cd artauction/web: npm i`
+
+## Supabase Setup
+
+
+- If you want top push database from CLI then use these cpmmands: 
+- Initialize CLI state (creates `supabase/` folder under `artauction/web` when you run it the first time)
+  - `cd artauction/web`
+  - `npm run supabase:login` (opens browser to authenticate)
+  - `npm run supabase:init`
+  - Link the project:
+    - PowerShell/CMD: `npx supabase link --project-ref qakvpogpkoujwownqkqt`     
+
+- Push database (migrations) via terminal
+  - With SQL migrations under `artauction/web/supabase/migrations/`:
+    - `npm run db:push`
+  - Open local Studio to inspect DB:
+    - `npm run db:studio`
+
+- Use in code
+  - Import the client from `artauction/web/src/lib/supabaseClient.js` and call Supabase APIs. Example:
+    - `import { supabase } from '../lib/supabaseClient';`
+    - `const { data, error } = await supabase.from('artworks').select('*');`
