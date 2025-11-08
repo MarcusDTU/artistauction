@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from 'react-router-dom';
 import DashboardOutlined from '@mui/icons-material/DashboardOutlined';
 import PersonOutline from '@mui/icons-material/PersonOutline';
 import HomeOutlined from '@mui/icons-material/HomeOutlined';
@@ -47,20 +48,22 @@ const Header = ({onLogin}) => {
                 <img src={logo} alt="Art Auction Logo" className="header-logo"/>
                 <Box className="nav-actions">
                     <Box
-                        component="a"
-                        href="#/home"
+                        component={Link}
+                        to="/home"
                         aria-label="Go to Home"
                         className="nav-item nav-link"
+                        onClick={(e)=>{ e.stopPropagation(); }}
                     >
                         <HomeOutlined className="nav-icon"/>
                         <Typography className="nav-text" variant="body1">Home</Typography>
                     </Box>
 
                     <Box
-                        component="a"
-                        href="#/dashboard"
+                        component={Link}
+                        to="/dashboard"
                         aria-label="Go to Artist Dashboard"
                         className="nav-item nav-link"
+                        onClick={(e)=>{ e.stopPropagation(); }}
                     >
                         <DashboardOutlined className="nav-icon"/>
                         <Typography className="nav-text" variant="body1">My Artworks</Typography>
