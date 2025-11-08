@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@supabase/supabase-js": "^2.47.10",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@fontsource/roboto": "^5.2.8",
@@ -23,7 +24,12 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "supabase:login": "npx supabase login",
+    "supabase:init": "npx supabase init",
+    "db:link": "npx supabase link --project-ref %SUPABASE_PROJECT_ID%",
+    "db:push": "npx supabase db push",
+    "db:studio": "npx supabase studio"
   },
   "eslintConfig": {
     "extends": [
