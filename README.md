@@ -27,7 +27,7 @@ In `artauction/web/package.json`:
 ## Supabase Setup
 
 
-- If you want top push database from CLI then use these cpmmands: 
+- If you want top push database from CLI then use these cpmmands: (Optional)
 - Initialize CLI state (creates `supabase/` folder under `artauction/web` when you run it the first time)
   - `cd artauction/web`
   - `npm run supabase:login` (opens browser to authenticate)
@@ -40,6 +40,7 @@ In `artauction/web/package.json`:
     - `npm run db:push`
   - Open local Studio to inspect DB:
     - `npm run db:studio`
+- NOTE: If Push database not working from terminal then go to sql editor in supabase and paste sql code there. And run. 
 
 - Use in code
   - Import the client from `artauction/web/src/lib/supabaseClient.js` and call Supabase APIs. Example:
