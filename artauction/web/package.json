@@ -25,11 +25,11 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "supabase:login": "npx supabase login",
-    "supabase:init": "npx supabase init",
-    "db:link": "npx supabase link --project-ref %SUPABASE_PROJECT_ID%",
-    "db:push": "npx supabase db push",
-    "db:studio": "npx supabase studio"
+    "supabase:login": "npx ../backend/supabase login",
+    "supabase:init": "npx ../backend/supabase init",
+    "db:link": "npx ../backend/supabase link --project-ref %SUPABASE_PROJECT_ID%",
+    "db:push": "npx ../backend/supabase db push",
+    "db:studio": "npx ../backend/supabase studio"
   },
   "eslintConfig": {
     "extends": [

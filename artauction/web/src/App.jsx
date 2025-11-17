@@ -10,7 +10,7 @@ import ArtworkPage from "./pages/ArtworkPage";
 import ArtistDashboard from "./pages/ArtistDashboard";
 import EditArtwork from "./pages/EditArtwork";
 import UploadArtwork from "./pages/UploadArtwork";
-import { supabase } from "./lib/supabaseClient";
+import { supabase } from "../../backend/services/supabaseClient";
 
 const App = () => {
   useEffect(() => {
