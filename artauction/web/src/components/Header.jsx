@@ -6,7 +6,7 @@ import HomeOutlined from '@mui/icons-material/HomeOutlined';
 import logo from '../assets/logo.png';
 import {AppBar, Toolbar, Typography, Box} from '@mui/material';
 import '../styles/header.css';
-import { supabase } from '../../../backend/services/supabaseClient';
+import { supabase } from '../backend/services/supabaseClient';
 
 const Header = ({onLogin}) => {
     const [session, setSession] = useState(null);

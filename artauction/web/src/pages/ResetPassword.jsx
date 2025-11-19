@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Box, Button, TextField, Typography, InputAdornment } from '@mui/material';
 import LockOutlined from '@mui/icons-material/LockOutlined';
 import '../styles/login.css';
-import { supabase } from '../../../backend/services/supabaseClient';
+import { supabase } from '../backend/services/supabaseClient';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');

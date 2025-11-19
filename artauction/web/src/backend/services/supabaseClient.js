@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
@@ -36,5 +36,4 @@ if (process.env.NODE_ENV === 'test') {
   supabaseClient = createMockSupabase();
 }
 
-export const supabase = supabaseClient;
-export default supabaseClient;
+module.exports = { supabase: supabaseClient };

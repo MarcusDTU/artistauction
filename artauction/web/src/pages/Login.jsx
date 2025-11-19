@@ -5,7 +5,7 @@ import LockOutlined from '@mui/icons-material/LockOutlined';
 import PersonOutline from '@mui/icons-material/PersonOutline';
 import '../styles/login.css';
 import logo from '../assets/logo.png';
-import { supabase } from '../../../backend/services/supabaseClient';
+import { supabase } from '../backend/services/supabaseClient';
 
 const Login = () => {
   const [tab, setTab] = useState(0); // 0 = Login, 1 = Sign Up
