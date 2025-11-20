@@ -6,3 +6,12 @@ export const getAllBids = async () => {
         .select('*')
     return {data, error};
 }
+
+export const getBidPrice = async (bidId) => {
+    const {data, error} = await supabase
+        .from('Bid')
+        .select('bid_amount')
+        .eq('bid_id', bidId)
+        .single();
+    return {data, error};
+}
