@@ -25,11 +25,32 @@ export const getArtworkById = async (artworkId) => {
 }
 
 export const createArtwork = async (artwork) => {
-    const { data, error } = supabase
-        .from('Artwork')
-        .insert([artwork])
-        .single();
-    return { data, error };
+    try {
+        // request the created row back by chaining .select() and use .single() for one object
+        const response = await supabase
+            .from('Artwork')
+            .insert([artwork])
+            .select()
+            .single();
+
+        console.log('Supabase insert response:', response);
+
+        const { data, error } = response;
+
+        if (error) return { data: null, error };
+
+        if (!data) {
+            return {
+                data: null,
+                error: new Error('Insert succeeded but no row was returned. Check RLS, API key permissions, or table RETURNING settings.')
+            };
+        }
+
+        return { data, error: null };
+    } catch (err) {
+        console.error('Unexpected error during insert:', err);
+        return { data: null, error: err };
+    }
 }
 
 export const updateArtwork = async (artworkId, updates) => {
