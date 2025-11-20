@@ -1,8 +1,20 @@
-import {getAllProfiles, getProfileById } from '../model/ProfileModel.js';
+import {getAllProfiles, getProfileById , getAllArtists} from '../model/ProfileModel.js';
 
 export const fetchAllProfiles = async (req, res) => {
     try {
         const { data, error } = await getAllProfiles();
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+        return res.json(data);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+}
+
+export const fetchAllArtists = async (req, res) => {
+    try {
+        const { data, error } = await getAllArtists();
         if (error) {
             return res.status(500).json({ error: error.message });
         }
@@ -24,3 +36,4 @@ export const fetchProfileById = async (req, res) => {
         return res.status(500).json({ error: err.message });
     }
 }
+

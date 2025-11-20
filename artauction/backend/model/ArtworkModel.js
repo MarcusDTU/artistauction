@@ -20,7 +20,7 @@ export const getArtworkById = async (artworkId) => {
 export const createArtwork = async (artwork) => {
     const { data, error } = supabase
         .from('Artwork')
-        .insert({id: artwork, name: [artwork]})
+        .insert([artwork])
         .single();
     return { data, error };
 }
