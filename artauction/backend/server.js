@@ -9,21 +9,6 @@ app.use(cors());
 app.use(express.json());
 app.use('/bid', bidRoutes)
 
-// Get all bids (most recent first)
-/*app.get('/bid', async (req, res) => {
-    try {
-        const {data, error} = await supabase
-            .from('Bid')
-            .select('*');
-        if (error){
-            return res.status(500).json({error: error.message});
-        }
-        return res.json(data);
-    } catch (err) {
-        return res.status(500).json({error: err.message});
-    }
-});
-*/
 
 
 
