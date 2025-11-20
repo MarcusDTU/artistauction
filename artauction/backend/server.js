@@ -4,6 +4,7 @@ import cors from "cors";
 import bidRoutes from "./routes/bidRoutes.js";
 import ProfileRoutes from "./routes/ProfileRoutes.js";
 import ArtworkRoutes from "./routes/ArtworkRoutes.js";
+import ArtistRoutes from "./routes/ArtistRoute.js";
 
 
 const app = express();
@@ -12,6 +13,8 @@ app.use(express.json());
 app.use('/bid', bidRoutes)
 app.use('/profiles', ProfileRoutes);
 app.use('/artwork', ArtworkRoutes);
+app.use('/artist', ArtistRoutes);
+
 
 
 // Get all bids (most recent first)
@@ -29,8 +32,6 @@ app.use('/artwork', ArtworkRoutes);
     }
 });
 */
-
-
 
 app.get('/',(req, res) => {
     return res.json("Server is running");

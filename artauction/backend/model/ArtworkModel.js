@@ -1,10 +1,17 @@
 import { supabase } from '../dbConfig.js';
 
-export const getAllArtworksbyProfileId = async (profileId) => {
+export const getAllArtworks = async () => {
+    const { data, error } = await supabase
+        .from('Artwork')
+        .select('*');
+    return { data, error };
+}
+
+export const getAllArtworksByArtistNumber = async (artist_number) => {
     const { data, error } = await supabase
         .from('Artwork')
         .select('*')
-        .eq('profile_id', profileId);
+        .eq('artist_id', artist_number);
     return { data, error };
 }
 
