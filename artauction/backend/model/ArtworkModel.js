@@ -19,7 +19,7 @@ export const getArtworkById = async (artworkId) => {
     const { data, error } = await supabase
         .from('Artwork')
         .select('*')
-        .eq('id', artworkId)
+        .eq('artwork_id', artworkId)
         .single();
     return { data, error };
 }
@@ -57,7 +57,7 @@ export const updateArtwork = async (artworkId, updates) => {
     const { data, error } = await supabase
         .from('Artwork')
         .update(updates)
-        .eq('id', artworkId)
+        .eq('artwork_id', artworkId)
         .single();
     return { data, error };
 }

@@ -16,6 +16,7 @@ router.get('/:id', fetchArtworkById);
 router.post('/', createNewArtwork);
 
 // Route to update an existing artwork
+router.patch('/:id', updateExistingArtwork);
 router.put('/:id', updateExistingArtwork);
 
 export default router;
