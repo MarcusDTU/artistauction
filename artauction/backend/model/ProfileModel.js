@@ -1,4 +1,4 @@
-import {supabase} from '../supabaseClient.js';
+import { supabase } from '../dbConfig.js';
 
 export const getAllProfiles = async () => {
     const { data, error } = await supabase
