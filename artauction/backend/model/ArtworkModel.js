@@ -1,4 +1,4 @@
-import { supabase } from '../supabaseClient.js';
+import { supabase } from '../dbConfig.js';
 
 export const getAllArtworksbyProfileId = async (profileId) => {
     const { data, error } = await supabase
@@ -18,9 +18,9 @@ export const getArtworkById = async (artworkId) => {
 }
 
 export const createArtwork = async (artwork) => {
-    const { data, error } = await supabase
+    const { data, error } = supabase
         .from('Artwork')
-        .insert([artwork])
+        .insert({id: artwork, name: [artwork]})
         .single();
     return { data, error };
 }
