@@ -37,8 +37,3 @@ jobs:
     - name: test
       working-directory: ./artauction/backend
       run: npm test
-    - name: deploy
-      uses: JamesIves/github-pages-deploy-action@v4
-      with:
-        folder: artauction/backend/build
-    
