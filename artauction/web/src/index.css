@@ -9,6 +9,9 @@ body {
   min-height: 100vh;
 }
 
+html { scrollbar-gutter: stable both-edges; }
+body { overflow-y: scroll; }
+
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
