@@ -26,7 +26,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-        cache-dependency-path: artauction/backend/package-lock.json
+        cache-dependency-path: artauction/artauction/backend/package-lock.json
     - name: ci
       working-directory: ./artauction/backend
       run: npm ci
