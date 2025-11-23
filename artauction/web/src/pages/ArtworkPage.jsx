@@ -6,6 +6,7 @@ import BiddingComponent from "../components/BiddingComponent";
 const API_HOST = process.env.REACT_APP_API_HOST ?? 'http://localhost:8081';
 const AUCTION_URL = process.env.REACT_APP_AUCTION_URL ?? `${API_HOST}/auction`;
 const BID_URL = process.env.REACT_APP_BID_URL ?? `${API_HOST}/bid`;
+const ARTWORK_URL = process.env.REACT_APP_ARTWORK_URL ?? `${API_HOST}/artwork`;
 
 // Normalize incoming artwork objects from router state / backend
 const normalizeArtwork = (raw = {}) => ({
@@ -38,7 +39,6 @@ const ArtworkPage = () => {
         (async () => {
             try {
                 const auctionsRes = await fetch(`${AUCTION_URL}/artwork/${encodeURIComponent(artId)}`);
-                console.log("Fetched auctions response:", auctionsRes);
                 if (!auctionsRes.ok) return;
                 const fetchedAuctions = await auctionsRes.json();
 
@@ -61,7 +61,6 @@ const ArtworkPage = () => {
                     if (!auId) return { auction_id: auId, bid_id: null, value: null, rawBid: null };
                     try {
                         const r = await fetch(`${BID_URL}/latest/auction/${encodeURIComponent(auId)}`);
-                        console.log("Fetched latest bid response for auction", auId, ":", r);
                         if (!r.ok) return { auction_id: auId, bid_id: null, value: null, rawBid: null };
                         const body = await r.json();
                         const bidObj = Array.isArray(body) ? (body[0] ?? null) : body;
@@ -137,21 +136,22 @@ const ArtworkPage = () => {
             };
         }
 
-        // optimistic update
-        setArtwork(prev => (prev ? { ...prev, currentBid: newBid } : prev));
-
         const auctionId = auctions?.[0]?.id ?? latestBids?.[0]?.auction_id ?? null;
         if (!auctionId) {
             return { success: false, message: 'No auction found for this artwork' };
         }
 
+        // Keep previous state for potential rollback (local UI)
+        const prevArtwork = artwork;
+        const prevLatestBids = latestBids;
+
         try {
+            // 1) Create the bid
             const res = await fetch(`${BID_URL}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify({
                     auction_id: auctionId,
-                    artwork_id: artId,
                     bid_amount: newBid
                 }),
             });
@@ -162,16 +162,49 @@ const ArtworkPage = () => {
                 return { success: false, message: `Failed to save bid: ${msg}` };
             }
 
-            // update local latestBids on success
+            // parse created bid (if returned)
+            const created = await res.json().catch(() => ({}));
+            const createdBidId = created?.id ?? created?.bid_id ?? null;
+
+            // 2) PATCH artwork current_price — must succeed for the update to "go through"
+            const patchRes = await fetch(`${ARTWORK_URL}/${encodeURIComponent(artId)}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ current_price: newBid }),
+            });
+
+            if (!patchRes.ok) {
+                // best-effort: delete the created bid so the update is not applied server-side
+                if (createdBidId) {
+                    try {
+                        await fetch(`${BID_URL}/${encodeURIComponent(createdBidId)}`, { method: 'DELETE' });
+                    } catch (deleteErr) {
+                        // ignore delete errors, but still roll back local state
+                        // eslint-disable-next-line no-console
+                        console.warn('Failed to delete created bid after patch failure', deleteErr);
+                    }
+                }
+
+                const body = await patchRes.json().catch(() => ({}));
+                const msg = body?.error?.message ?? `Server returned ${patchRes.status}`;
+                return { success: false, message: `Failed to update artwork current_price: ${msg}` };
+            }
+
+            // Both POST and PATCH succeeded — update local state
+            setArtwork(prev => (prev ? { ...prev, currentBid: newBid } : prev));
+
             setLatestBids(prev => prev.map(info => {
                 if (String(info.auction_id) === String(auctionId)) {
-                    return { ...info, value: newBid, bid_id: info.bid_id ?? 'pending' };
+                    return { ...info, value: newBid, bid_id: info.bid_id ?? createdBidId ?? 'pending' };
                 }
                 return info;
             }));
 
             return { success: true };
         } catch (err) {
+            // On network / unexpected error, attempt to roll back local state (no server-side delete attempt here)
+            setArtwork(prevArtwork);
+            setLatestBids(prevLatestBids);
             return { success: false, message: `Failed to save bid: ${String(err)}` };
         }
     }
