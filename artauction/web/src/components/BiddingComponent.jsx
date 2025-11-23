@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
 const containerStyle = {
@@ -47,72 +47,63 @@ const errorStyle = {
 };
 
 const BiddingComponent = ({ initialBid = 0, onBidUpdate }) => {
-  const [currentBid, setCurrentBid] = useState(Number(initialBid) || 0);
-  const [input, setInput] = useState('');
-  const [error, setError] = useState(null);
+    const [bid, setBid] = useState(initialBid ?? 0);
+    const [error, setError] = useState(null);
 
-  const parsePositiveNumber = (val) => {
-    if (val === '' || val === null) return null;
-    const n = Number(val);
-    if (Number.isFinite(n) && n > 0) return n;
-    return null;
-  };
+    useEffect(() => {
+        setBid(initialBid ?? 0);
+        setError(null);
+    }, [initialBid]);
 
-  const handleChange = (e) => {
-    setInput(e.target.value);
-    setError(null);
-  };
+    const handleChange = (e) => {
+        const v = Number(e.target.value);
+        if (!Number.isFinite(v)) {
+            setBid(0);
+            setError('Invalid number');
+            return;
+        }
+        if (v < 0) {
+            setBid(v);
+            setError('Bid must be 0 or greater');
+            return;
+        }
+        setBid(v);
+        setError(null);
+    };
 
-  const handleIncrement = () => {
-    const value = parsePositiveNumber(input);
-    if (value === null) {
-      setError('Enter a positive number');
-      return;
-    }
-    const next = +(currentBid + value).toFixed(2);
-    setCurrentBid(next);
-    setInput('');
-    setError(null);
-    if (typeof onBidUpdate === 'function') onBidUpdate(next);
-  };
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (error) return;
+        onBidUpdate?.(bid);
+    };
 
-  const isDisabled = parsePositiveNumber(input) === null;
+    return (
+        <div style={containerStyle}>
+            <p style={bidStyle}>Current: {bid}</p>
 
-  return (
-    <div style={containerStyle}>
-      <div>
-        <p style={bidStyle}>Current bid: ${currentBid.toFixed(2)}</p>
-      </div>
+            <form onSubmit={handleSubmit}>
+                <div style={inputRow}>
+                    <input
+                        type="number"
+                        value={bid}
+                        onChange={handleChange}
+                        step="1"
+                        min="0"
+                        aria-label="bid amount"
+                        style={inputStyle}
+                    />
+                    <button type="submit" style={buttonStyle}>Bid</button>
+                </div>
+            </form>
 
-      <div style={inputRow}>
-        <input
-          type="number"
-          min="0.01"
-          step="0.01"
-          aria-label="Increment amount"
-          placeholder="Enter positive amount"
-          value={input}
-          onChange={handleChange}
-          style={inputStyle}
-        />
-        <button
-          type="button"
-          onClick={handleIncrement}
-          disabled={isDisabled}
-          style={{ ...buttonStyle, opacity: isDisabled ? 0.6 : 1, cursor: isDisabled ? 'not-allowed' : 'pointer' }}
-        >
-          Add
-        </button>
-      </div>
-
-      {error && <p style={errorStyle}>{error}</p>}
-    </div>
-  );
+            {error && <p style={errorStyle}>{error}</p>}
+        </div>
+    );
 };
 
 BiddingComponent.propTypes = {
-  initialBid: PropTypes.number,
-  onBidUpdate: PropTypes.func,
+    initialBid: PropTypes.number,
+    onBidUpdate: PropTypes.func,
 };
 
 export default BiddingComponent;

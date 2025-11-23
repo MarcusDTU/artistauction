@@ -27,6 +27,7 @@ const ArtworkPage = () => {
                 const auctionsRes = await fetch(`${AUCTION_URL}/artwork/${encodeURIComponent(artwork.id)}`);
                 if (!auctionsRes.ok) return;
                 const fetchedAuctions = await auctionsRes.json();
+
                 if (!Array.isArray(fetchedAuctions) || fetchedAuctions.length === 0) {
                     if (mounted) {
                         setAuctions([]);
@@ -34,33 +35,53 @@ const ArtworkPage = () => {
                     }
                     return;
                 }
-                if (mounted) setAuctions(fetchedAuctions);
 
-                const infos = await Promise.all(fetchedAuctions.map(async (au) => {
+                // Normalize auctions so each auction has an `id` (accept `id` or `auction_id`)
+                const normalizedAuctions = fetchedAuctions.map(au => ({
+                    ...au,
+                    id: au.id ?? au.auction_id ?? null
+                }));
+                if (mounted) setAuctions(normalizedAuctions);
+
+                const infos = await Promise.all(normalizedAuctions.map(async (au) => {
+                    const auId = au.id ?? au.auction_id ?? null;
+                    if (!auId) {
+                        return { auction_id: auId, bid_id: null, value: null, rawBid: null };
+                    }
                     try {
-                        const r = await fetch(`${BID_URL}/latest/auction/${encodeURIComponent(au.id)}`);
-                        if (!r.ok) return { auction_id: au.id, bid_id: null, value: null, rawBid: null };
+                        const r = await fetch(`${BID_URL}/latest/auction/${encodeURIComponent(auId)}`);
+                        if (!r.ok) return { auction_id: auId, bid_id: null, value: null, rawBid: null };
                         const body = await r.json();
+
                         if (body && typeof body === 'object' && body.error) {
-                            return { auction_id: au.id, bid_id: null, value: null, rawBid: null };
+                            return { auction_id: auId, bid_id: null, value: null, rawBid: null };
                         }
+
                         const bidObj = Array.isArray(body) ? (body[0] ?? null) : body;
-                        if (!bidObj) return { auction_id: au.id, bid_id: null, value: null, rawBid: null };
+                        if (!bidObj) return { auction_id: auId, bid_id: null, value: null, rawBid: null };
+
+                        // Normalize bid fields (support bid_id / id and bid_amount / amount / value)
+                        const normalizedBid = {
+                            id: bidObj.id ?? bidObj.bid_id ?? null,
+                            amount: bidObj.amount ?? bidObj.bid_amount ?? bidObj.value ?? null,
+                            raw: bidObj
+                        };
+
                         return {
-                            auction_id: au.id,
-                            bid_id: bidObj?.id ?? null,
-                            value: bidObj?.amount ?? bidObj?.value ?? null,
-                            rawBid: bidObj ?? null
+                            auction_id: auId,
+                            bid_id: normalizedBid.id,
+                            value: normalizedBid.amount,
+                            rawBid: normalizedBid.raw
                         };
                     } catch (e) {
-                        return { auction_id: au.id, bid_id: null, value: null, rawBid: null };
+                        return { auction_id: auId, bid_id: null, value: null, rawBid: null };
                     }
                 }));
 
                 if (!mounted) return;
                 setLatestBids(infos);
 
-                // --- NEW: set artwork.currentBid from latest fetched bids (use the highest value) ---
+                // --- update artwork.currentBid from latest fetched bids (use the highest value) ---
                 const numericValues = infos
                   .map(i => (i?.value != null ? Number(i.value) : NaN))
                   .filter(v => Number.isFinite(v));
@@ -68,14 +89,12 @@ const ArtworkPage = () => {
                   const highest = Math.max(...numericValues);
                   setArtwork(prev => {
                     const prevCurrent = Number(prev?.currentBid ?? prev?.startingBid ?? 0);
-                    // only update if fetched highest is greater than existing currentBid
                     if (!Number.isFinite(prevCurrent) || highest > prevCurrent) {
                       return { ...(prev ?? {}), currentBid: highest };
                     }
                     return prev;
                   });
                 }
-                // --- end NEW ---
 
             } catch (err) {
                 // silent fail
