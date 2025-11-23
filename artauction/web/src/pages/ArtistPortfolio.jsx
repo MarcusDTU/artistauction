@@ -1,3 +1,4 @@
+// javascript
 import React, {useEffect, useState, useRef} from 'react';
 import {useParams, useLocation, useNavigate} from 'react-router-dom';
 import PreviewArtworkList from '../components/PreviewArtworkList';
@@ -18,6 +19,12 @@ const normalizeArtist = (raw, fallbackId) => {
     raw,
   };
 };
+
+const isArtworkAvailable = (a) => {
+  const availRaw = a.status ?? a.availability ?? (typeof a.available === 'boolean' ? (a.available ? 'available' : 'not available') : undefined);
+  return String(availRaw ?? '').toLowerCase() === 'available';
+};
+
 const ArtistPortfolio = () => {
     const { artistId } = useParams();
     const location = useLocation();
@@ -34,20 +41,16 @@ const ArtistPortfolio = () => {
         let mounted = true;
 
         const shouldFetchArtist = !artist || !artist.bio;
-        // Only fetch artworks if we don't have an artworks value at all (null/undefined).
-        // If artworks is an explicit empty array, do NOT re-fetch.
         const shouldFetchArtworks = !artist || artist.artworks == null;
 
         if ((shouldFetchArtist || shouldFetchArtworks) && artistId) {
             setLoading(true);
             const base = process.env.REACT_APP_API_BASE || 'http://localhost:8081';
             const artistUrl = `${base}/artist/${encodeURIComponent(artistId)}`;
-            // corrected path to match backend routes
             const artworksUrl = `${base}/artwork/artist/${encodeURIComponent(artistId)}`;
 
             (async () => {
                 try {
-                    // Fetch artist and artworks in parallel
                     const [artistRes, artworksRes] = await Promise.all([
                         fetch(artistUrl).catch(e => ({ ok: false, _err: e })),
                         fetch(artworksUrl).catch(e => ({ ok: false, _err: e }))
@@ -56,7 +59,6 @@ const ArtistPortfolio = () => {
                     let fetchedArtist = null;
                     let fetchedArtworks = null;
 
-                    // Process artist response
                     if (artistRes) {
                         if (artistRes.ok) {
                             const ct = artistRes.headers.get('content-type') || '';
@@ -73,7 +75,6 @@ const ArtistPortfolio = () => {
                         }
                     }
 
-                    // Process artworks response (non-fatal if it fails, but surfaced)
                     if (artworksRes) {
                         if (artworksRes.ok) {
                             const ct = artworksRes.headers.get('content-type') || '';
@@ -83,7 +84,6 @@ const ArtistPortfolio = () => {
                             }
                             fetchedArtworks = await artworksRes.json();
                         } else if (artworksRes._err) {
-                            // treat as error
                             throw artworksRes._err;
                         } else {
                             const body = await artworksRes.text();
@@ -93,19 +93,28 @@ const ArtistPortfolio = () => {
 
                     if (!mounted) return;
 
-                    // Merge: prefer fetched artist data, fallback to existing partial artist
                     const mergedRaw = { ...(artist || {}), ...(fetchedArtist || {}) };
                     const normalized = normalizeArtist(mergedRaw, artistId);
 
-                    // Use artworks result even if it's an empty array (explicit no artworks)
-                    if (Array.isArray(fetchedArtworks)) {
-                        normalized.artworks = fetchedArtworks.map(a => ({
-                            ...a,
-                            image: a.image ?? a.image_url ?? a.url ?? a.thumbnail ?? PLACEHOLDER_IMAGE,
-                            artistName: normalized.name,
-                            artist: { id: normalized.id, name: normalized.name },
-                        }));
-                    }
+                    // Determine source artworks (prefer fetchedArtworks when available)
+                    const sourceArtworks = Array.isArray(fetchedArtworks)
+                      ? fetchedArtworks
+                      : Array.isArray(normalized.artworks)
+                        ? normalized.artworks
+                        : [];
+
+                    // Normalize artwork fields and filter by availability == 'available'
+                    normalized.artworks = sourceArtworks
+                      .map(a => ({
+                        ...a,
+                        id: a.id ?? a.artwork_id ?? a._id ?? a.slug ?? a.title,
+                        image: a.image ?? a.image_url ?? a.url ?? a.thumbnail ?? PLACEHOLDER_IMAGE,
+                        title: a.title ?? a.name ?? 'Untitled',
+                        artistName: normalized.name,
+                        artist: { id: normalized.id, name: normalized.name },
+                        // keep existing status/availability fields for downstream UI
+                      }))
+                      .filter(isArtworkAvailable);
 
                     setArtist(normalized);
                 } catch (err) {
