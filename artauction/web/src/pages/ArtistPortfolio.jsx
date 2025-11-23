@@ -99,7 +99,12 @@ const ArtistPortfolio = () => {
 
                     // Use artworks result even if it's an empty array (explicit no artworks)
                     if (Array.isArray(fetchedArtworks)) {
-                        normalized.artworks = fetchedArtworks;
+                        normalized.artworks = fetchedArtworks.map(a => ({
+                            ...a,
+                            image: a.image ?? a.image_url ?? a.url ?? a.thumbnail ?? PLACEHOLDER_IMAGE,
+                            artistName: normalized.name,
+                            artist: { id: normalized.id, name: normalized.name },
+                        }));
                     }
 
                     setArtist(normalized);
