@@ -190,7 +190,66 @@ const ArtworkPage = () => {
                 return { success: false, message: `Failed to update artwork current_price: ${msg}` };
             }
 
-            // Both POST and PATCH succeeded — update local state
+            // 3) After both POST and PATCH succeeded, fetch artwork to read end_price and current_price
+            let fetchedArt = null;
+            try {
+                const artRes = await fetch(`${ARTWORK_URL}/${encodeURIComponent(artId)}`);
+                if (artRes.ok) {
+                    fetchedArt = await artRes.json().catch(() => null);
+                }
+            } catch (fErr) {
+                // ignore fetch error — do not block unless auction deactivation is required and fails
+                fetchedArt = null;
+            }
+
+            // If we successfully fetched artwork and both prices exist, compare them
+            let shouldDeactivateAuction = false;
+            if (fetchedArt) {
+                const fetchedCurrent = Number(fetchedArt.current_price ?? fetchedArt.currentBid ?? fetchedArt.current_bid ?? null);
+                const endPrice = Number(fetchedArt.end_price ?? fetchedArt.endPrice ?? fetchedArt.end_price ?? null);
+                if (Number.isFinite(fetchedCurrent) && Number.isFinite(endPrice) && fetchedCurrent >= endPrice) {
+                    shouldDeactivateAuction = true;
+                }
+            }
+
+            // If auction should be deactivated, attempt PATCH to set is_active = false
+            if (shouldDeactivateAuction) {
+                const auctionPatchRes = await fetch(`${AUCTION_URL}/${encodeURIComponent(auctionId)}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ is_active: false }),
+                });
+
+                if (!auctionPatchRes.ok) {
+                    // best-effort: delete created bid so the update does not go through
+                    if (createdBidId) {
+                        try {
+                            await fetch(`${BID_URL}/${encodeURIComponent(createdBidId)}`, { method: 'DELETE' });
+                        } catch (deleteErr) {
+                            // ignore delete errors
+                            // eslint-disable-next-line no-console
+                            console.warn('Failed to delete created bid after auction-deactivate failure', deleteErr);
+                        }
+                    }
+                    // attempt to roll back artwork current_price locally
+                    setArtwork(prevArtwork);
+                    setLatestBids(prevLatestBids);
+
+                    const body = await auctionPatchRes.json().catch(() => ({}));
+                    const msg = body?.error?.message ?? `Server returned ${auctionPatchRes.status}`;
+                    return { success: false, message: `Failed to deactivate auction: ${msg}` };
+                }
+
+                // mark auction as inactive locally
+                setAuctions(prev => (Array.isArray(prev) ? prev.map(a => {
+                    if (String(a.id ?? a.auction_id) === String(auctionId)) {
+                        return { ...(a ?? {}), is_active: false };
+                    }
+                    return a;
+                }) : prev));
+            }
+
+            // Both POST and PATCH artwork (and optionally auction deactivation) succeeded — update local state
             setArtwork(prev => (prev ? { ...prev, currentBid: newBid } : prev));
 
             setLatestBids(prev => prev.map(info => {
