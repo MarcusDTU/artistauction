@@ -1,3 +1,4 @@
+// javascript
 import React, {useRef, useState, useEffect} from 'react';
 import { useNavigate } from "react-router-dom";
 import TextBox from "../components/TextBox";
@@ -104,6 +105,15 @@ const UploadArtwork = () => {
         })));
     };
 
+    // helper to accept event, direct string, number or { value }
+    const extractValue = (v) => {
+        if (typeof v === 'string') return v;
+        if (typeof v === 'number') return String(v);
+        if (v && typeof v.target?.value === 'string') return v.target.value;
+        if (v && typeof v.value === 'string') return v.value;
+        return '';
+    };
+
     const handleSaveExit = async () => {
         // prefer controlled state; fallback to DOM lookup for compatibility
         let titleVal = (title ?? '').trim();
@@ -123,7 +133,8 @@ const UploadArtwork = () => {
             if (secretEl && typeof secretEl.value === 'string') secretRaw = secretEl.value.trim();
         }
 
-        const secretPrice = secretRaw === '' ? null : Number(secretRaw);
+        const parsedSecret = secretRaw === '' ? null : Number(secretRaw);
+        const secretPrice = Number.isFinite(parsedSecret) ? parsedSecret : null;
 
         if (!titleVal) {
             alert('Title is required');
@@ -137,8 +148,9 @@ const UploadArtwork = () => {
             const payload = {
                 title: titleVal,
                 description: descVal,
+                artist_id: 1, // hardcoded for demo purposes
                 end_price: Number.isFinite(secretPrice) ? secretPrice : null,
-                images
+                image_url: images
             };
 
             const res = await fetch(ARTWORK_URL, {
@@ -219,12 +231,27 @@ const UploadArtwork = () => {
             )}
 
             <div style={styles.textBoxesContainer}>
-                <TextBox title="Add title" id="art-title" value={title} onChange={(e) => setTitle(e.target?.value ?? '')} />
-                <TextBox title="Add description" id="art-description" placeholder="Enter description"
-                         hint="Provide an optional description for your artwork" value={description}
-                         onChange={(e) => setDescription(e.target?.value ?? '')} />
-                <NumberBox title="Set secret price" id="secret-price" hint="Enter a positive number"
-                           value={secretPriceStr} onChange={(e) => setSecretPriceStr(e.target?.value ?? '')} />
+                <TextBox
+                    title="Add title"
+                    id="art-title"
+                    value={title}
+                    onChange={(v) => setTitle(extractValue(v))}
+                />
+                <TextBox
+                    title="Add description"
+                    id="art-description"
+                    placeholder="Enter description"
+                    hint="Provide an optional description for your artwork"
+                    value={description}
+                    onChange={(v) => setDescription(extractValue(v))}
+                />
+                <NumberBox
+                    title="Set secret price"
+                    id="secret-price"
+                    hint="Enter a positive number"
+                    value={secretPriceStr}
+                    onChange={(v) => setSecretPriceStr(extractValue(v))}
+                />
             </div>
 
             <div style={styles.actionsContainer}>
