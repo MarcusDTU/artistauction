@@ -177,6 +177,22 @@ const EditArtwork = () => {
         alert(`Upload more images feature not implemented yet for artwork ${artwork?.id ?? id}.`);
     };
 
+    const handleToggleAvailability = async () => {
+        const current = artwork?.status ?? 'not available';
+        const newStatus = current === 'available' ? 'not available' : 'available';
+
+        try {
+            await patchArtwork({ status: newStatus, artist_id: LOGGED_IN_ARTIST_ID });
+            // patchArtwork merges the returned data into state, but ensure UI reflects it
+            setArtwork(prev => ({ ...prev, status: newStatus }));
+            alert(`Status updated to "${newStatus}" for artwork ${artwork?.id ?? id}.`);
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to update status', err);
+            alert(`Failed to update status for artwork ${artwork?.id ?? id}: ${err.message || 'unknown error'}`);
+        }
+    };
+
     return (
         <Box sx={{p: 3, position: 'relative', minHeight: '80vh', fontFamily: 'Arial, sans-serif'}}>
             <Box
@@ -288,6 +304,24 @@ const EditArtwork = () => {
 
                     <Typography variant="caption" sx={{display: 'block', mt: 1, color: '#666'}}>
                         Current stored price: {typeof artwork.price !== 'undefined' ? Number(artwork.price).toFixed(2) : 'None (will default to ' + DEFAULT_SECRET_PRICE.toFixed(2) + ')'}
+                    </Typography>
+                </Box>
+
+                <Box sx={{mt: 2, display: 'flex', alignItems: 'center', gap: 1}}>
+                    <Typography variant="h6" component="h3" sx={{fontWeight: 600}}>
+                        Availability
+                    </Typography>
+
+                    <Button
+                        variant="contained"
+                        color={artwork?.status === 'available' ? 'success' : 'secondary'}
+                        onClick={handleToggleAvailability}
+                    >
+                        {artwork?.status === 'available' ? 'Set not available' : 'Set available'}
+                    </Button>
+
+                    <Typography variant="body2" sx={{ml: 1, color: '#666'}}>
+                        Current: {artwork?.status ?? 'not available'}
                     </Typography>
                 </Box>
 
