@@ -1,20 +1,45 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SAMPLE_ARTWORKS } from '../assets/SampleArtwork';
+
+const LOGGED_IN_ARTIST_ID = 2; //hardcoded for demo purposes
+const API_HOST = process.env.REACT_APP_API_HOST ?? 'http://localhost:8081';
+const ARTWORK_URL = process.env.REACT_APP_ARTWORK_URL ?? `${API_HOST}/artwork/artist/${LOGGED_IN_ARTIST_ID}`;
 
 const ArtistDashboard = () => {
-
-    const [artworks] = useState(() => {
-        let data = SAMPLE_ARTWORKS;
-        if (!Array.isArray(data)) data = [data];
-        return data.map(a => ({
-            ...a,
-            imageUrl: a.imageUrl || a.image || '',
-            title: a.title || a.name || 'Untitled'
-        }));
-    });
-
+    const [artworks, setArtworks] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        let mounted = true;
+        const load = async () => {
+            try {
+                const res = await fetch(ARTWORK_URL, { headers: { Accept: 'application/json' } });
+                if (!res.ok) throw new Error(`Server returned ${res.status}`);
+                const data = await res.json();
+                const list = Array.isArray(data) ? data : (data.items || []);
+                const mapped = list.map(a => ({
+                    ...a,
+                    imageUrl: a.image_url || a.imageUrl || a.image || '',
+                    title: a.title || a.name || 'Untitled'
+                }));
+                if (mounted) {
+                    setArtworks(mapped);
+                    setLoading(false);
+                }
+            } catch (err) {
+                // eslint-disable-next-line no-console
+                console.error('Failed to load artworks', err);
+                if (mounted) {
+                    setError(err.message || 'Failed to load artworks');
+                    setLoading(false);
+                }
+            }
+        };
+        load();
+        return () => { mounted = false; };
+    }, []);
 
     const handleEdit = (id) => {
         navigate(`/edit-artwork/${id}`, {state: {artwork: artworks.find(a => a.id === id)}});
@@ -62,30 +87,39 @@ const ArtistDashboard = () => {
     return (
         <div style={styles.page}>
             <h1>Your Artworks</h1>
-            <ul style={styles.list}>
-                {artworks.map(a => (
-                    <li key={a.id} style={styles.item}>
-                        <div style={styles.left}>
-                            <img src={a.imageUrl} alt={a.title} style={styles.thumb}/>
-                            <div style={styles.info}>
-                                <div style={styles.title}>{a.title}</div>
-                            </div>
-                        </div>
 
-                        <div style={styles.right}>
-                            <button style={styles.button} onClick={() => handleEdit(a.id)}>Edit</button>
-                            <div
-                                style={{
-                                    ...styles.status,
-                                    ...(a.status === 'public' ? styles.statusPublic : styles.statusPrivate)
-                                }}
-                            >
-                                {a.status}
+            {loading ? (
+                <div>Loading artworks...</div>
+            ) : error ? (
+                <div style={{color: 'crimson'}}>Error: {error}</div>
+            ) : artworks.length === 0 ? (
+                <div>No artworks found.</div>
+            ) : (
+                <ul style={styles.list}>
+                    {artworks.map(a => (
+                        <li key={a.id} style={styles.item}>
+                            <div style={styles.left}>
+                                <img src={a.imageUrl} alt={a.title} style={styles.thumb}/>
+                                <div style={styles.info}>
+                                    <div style={styles.title}>{a.title}</div>
+                                </div>
                             </div>
-                        </div>
-                    </li>
-                ))}
-            </ul>
+
+                            <div style={styles.right}>
+                                <button style={styles.button} onClick={() => handleEdit(a.id)}>Edit</button>
+                                <div
+                                    style={{
+                                        ...styles.status,
+                                        ...(a.status === 'public' ? styles.statusPublic : styles.statusPrivate)
+                                    }}
+                                >
+                                    {a.status || 'private'}
+                                </div>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            )}
 
             <button
                 type="button"
