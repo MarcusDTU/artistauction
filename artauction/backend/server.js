@@ -5,6 +5,7 @@ import bidRoutes from "./routes/bidRoutes.js";
 import ProfileRoutes from "./routes/ProfileRoutes.js";
 import ArtworkRoutes from "./routes/ArtworkRoutes.js";
 import ArtistRoutes from "./routes/ArtistRoute.js";
+import AuctionRoute from "./routes/AuctionRoute.js";
 
 
 const app = express();
@@ -14,6 +15,7 @@ app.use('/bid', bidRoutes)
 app.use('/profiles', ProfileRoutes);
 app.use('/artwork', ArtworkRoutes);
 app.use('/artist', ArtistRoutes);
+app.use('/auction', AuctionRoute);
 
 
 
