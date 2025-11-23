@@ -106,12 +106,15 @@ const ArtworkPage = () => {
 
     const handleBack = (e) => {
         e.preventDefault();
-        if (artist) {
-            const artistId = encodeURIComponent(artist.id || artist.slug || artist.name || '');
-            navigate(`/artist/${artistId}`, { state: { artist } });
-        } else {
+
+        if (!artist) {
             navigate(-1);
+            return;
         }
+
+        const artistId = encodeURIComponent(artist.id || artist.slug || artist.name || '');
+
+        navigate(`/artist/${artistId}`, { state: { artist }, replace: true });
     };
 
     async function handleBidUpdate(newBid) {
