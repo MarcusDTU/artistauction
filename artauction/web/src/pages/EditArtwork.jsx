@@ -3,6 +3,10 @@ import {useParams, useLocation, useNavigate} from 'react-router-dom';
 import {Box, Typography, IconButton, TextField, Button} from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 
+const LOGGED_IN_ARTIST_ID = 2;
+const API_HOST = process.env.REACT_APP_API_HOST ?? 'http://localhost:8081';
+const ARTWORK_URL = process.env.REACT_APP_ARTWORK_URL ?? `${API_HOST}/artwork/`;
+
 const fallbackArtworks = [
     {
         id: 1,
@@ -61,16 +65,41 @@ const EditArtwork = () => {
         );
     }
 
+    // helper to PATCH artwork; merges returned JSON into local state
+    const patchArtwork = async (patch) => {
+        const url = `${ARTWORK_URL}/${artwork.id}`;
+        const res = await fetch(url, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify(patch)
+        });
+        if (!res.ok) {
+            const bodyText = await res.text().catch(() => '');
+            throw new Error(`Server returned ${res.status}: ${bodyText}`);
+        }
+        const data = await res.json().catch(() => ({}));
+        // update local artwork with server response (or with patch as fallback)
+        setArtwork(prev => ({ ...prev, ...patch, ...data }));
+        return data;
+    };
+
     // Title handlers
     const handleStartEditTitle = () => setIsEditingTitle(true);
     const handleCancelTitle = () => {
         setTitle(artwork.title);
         setIsEditingTitle(false);
     };
-    const handleSaveTitle = () => {
-        setArtwork(prev => ({...prev, title}));
-        setIsEditingTitle(false);
-        console.log(`Saved title for artwork ${artwork.id}:`, {title});
+    const handleSaveTitle = async () => {
+        try {
+            const payload = { title, artist_id: LOGGED_IN_ARTIST_ID };
+            await patchArtwork(payload);
+            setIsEditingTitle(false);
+            console.log(`Saved title for artwork ${artwork.id}:`, payload);
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to save title', err);
+            alert(`Failed to save title: ${err.message || 'unknown error'}`);
+        }
     };
 
     // Description handlers (separate)
@@ -79,10 +108,17 @@ const EditArtwork = () => {
         setDescription(artwork.description || '');
         setIsEditingDescription(false);
     };
-    const handleSaveDescription = () => {
-        setArtwork(prev => ({...prev, description}));
-        setIsEditingDescription(false);
-        console.log(`Saved description for artwork ${artwork.id}:`, {description});
+    const handleSaveDescription = async () => {
+        try {
+            const payload = { description, artist_id: LOGGED_IN_ARTIST_ID };
+            await patchArtwork(payload);
+            setIsEditingDescription(false);
+            console.log(`Saved description for artwork ${artwork.id}:`, payload);
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to save description', err);
+            alert(`Failed to save description: ${err.message || 'unknown error'}`);
+        }
     };
 
     const handlePriceChange = (e) => {
@@ -92,16 +128,24 @@ const EditArtwork = () => {
         }
     };
 
-    const handleSetPrice = () => {
+    const handleSetPrice = async () => {
         const parsed = parseFloat(priceInput);
         if (isNaN(parsed) || parsed <= 0) {
             alert('Please enter a positive price.');
             return;
         }
         const rounded = Number(parsed.toFixed(2));
-        setArtwork(prev => ({...prev, price: rounded}));
-        setPriceInput(rounded.toFixed(2));
-        console.log(`Set secret price for artwork ${artwork.id}:`, rounded);
+        try {
+            // send price and artist id; backend may expect price or end_price
+            const payload = { end_price: rounded, artist_id: LOGGED_IN_ARTIST_ID };
+            await patchArtwork(payload);
+            setPriceInput(rounded.toFixed(2));
+            console.log(`Set secret price for artwork ${artwork.id}:`, payload);
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to set price', err);
+            alert(`Failed to set price: ${err.message || 'unknown error'}`);
+        }
     };
 
     const handleUploadMoreImages = () => {
