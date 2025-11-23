@@ -8,19 +8,18 @@ const AUCTION_URL = process.env.REACT_APP_AUCTION_URL ?? `${API_HOST}/auction`;
 const BID_URL = process.env.REACT_APP_BID_URL ?? `${API_HOST}/bid`;
 const ARTWORK_URL = process.env.REACT_APP_ARTWORK_URL ?? `${API_HOST}/artwork`;
 
-// Normalize incoming artwork objects from router state / backend
 const normalizeArtwork = (raw = {}) => ({
   ...raw,
   id: raw.id ?? raw.artwork_id ?? raw.artworkNumber ?? raw.slug ?? null,
   startingBid: raw.startingBid ?? raw.starting_bid ?? null,
   currentBid: raw.currentBid ?? raw.current_bid ?? null,
+  sold: raw.sold ?? false,
 });
 
 const ArtworkPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // normalize initial art so `id` exists if backend returned `artwork_id`
     const initialRaw = location.state?.art || {};
     const normalizedInitial = normalizeArtwork(initialRaw);
     const artist = location.state?.artist;
@@ -29,7 +28,6 @@ const ArtworkPage = () => {
     const [auctions, setAuctions] = useState([]);
     const [latestBids, setLatestBids] = useState([]);
 
-    // use a stable artId for effects and lint
     const artId = artwork?.id ?? null;
 
     useEffect(() => {
@@ -117,7 +115,6 @@ const ArtworkPage = () => {
     };
 
     async function handleBidUpdate(newBid) {
-        // compute current highest known bid
         const knownValues = [
             ...(latestBids || []).map(i => (i?.value != null ? Number(i.value) : NaN)),
             Number(artwork?.currentBid ?? artwork?.startingBid ?? NaN)
@@ -128,7 +125,6 @@ const ArtworkPage = () => {
             return { success: false, message: 'Invalid bid value' };
         }
 
-        // reject if not strictly greater than current highest
         if (newBid <= highest) {
             return {
                 success: false,
@@ -141,12 +137,10 @@ const ArtworkPage = () => {
             return { success: false, message: 'No auction found for this artwork' };
         }
 
-        // Keep previous state for potential rollback (local UI)
         const prevArtwork = artwork;
         const prevLatestBids = latestBids;
 
         try {
-            // 1) Create the bid
             const res = await fetch(`${BID_URL}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -162,11 +156,9 @@ const ArtworkPage = () => {
                 return { success: false, message: `Failed to save bid: ${msg}` };
             }
 
-            // parse created bid (if returned)
             const created = await res.json().catch(() => ({}));
             const createdBidId = created?.id ?? created?.bid_id ?? null;
 
-            // 2) PATCH artwork current_price — must succeed for the update to "go through"
             const patchRes = await fetch(`${ARTWORK_URL}/${encodeURIComponent(artId)}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -174,12 +166,10 @@ const ArtworkPage = () => {
             });
 
             if (!patchRes.ok) {
-                // best-effort: delete the created bid so the update is not applied server-side
                 if (createdBidId) {
                     try {
                         await fetch(`${BID_URL}/${encodeURIComponent(createdBidId)}`, { method: 'DELETE' });
                     } catch (deleteErr) {
-                        // ignore delete errors, but still roll back local state
                         // eslint-disable-next-line no-console
                         console.warn('Failed to delete created bid after patch failure', deleteErr);
                     }
@@ -190,7 +180,6 @@ const ArtworkPage = () => {
                 return { success: false, message: `Failed to update artwork current_price: ${msg}` };
             }
 
-            // 3) After both POST and PATCH succeeded, fetch artwork to read end_price and current_price
             let fetchedArt = null;
             try {
                 const artRes = await fetch(`${ARTWORK_URL}/${encodeURIComponent(artId)}`);
@@ -198,11 +187,9 @@ const ArtworkPage = () => {
                     fetchedArt = await artRes.json().catch(() => null);
                 }
             } catch (fErr) {
-                // ignore fetch error — do not block unless auction deactivation is required and fails
                 fetchedArt = null;
             }
 
-            // If we successfully fetched artwork and both prices exist, compare them
             let shouldDeactivateAuction = false;
             if (fetchedArt) {
                 const fetchedCurrent = Number(fetchedArt.current_price ?? fetchedArt.currentBid ?? fetchedArt.current_bid ?? null);
@@ -212,7 +199,6 @@ const ArtworkPage = () => {
                 }
             }
 
-            // If auction should be deactivated, attempt PATCH to set is_active = false
             if (shouldDeactivateAuction) {
                 const auctionPatchRes = await fetch(`${AUCTION_URL}/${encodeURIComponent(auctionId)}`, {
                     method: 'PATCH',
@@ -221,17 +207,14 @@ const ArtworkPage = () => {
                 });
 
                 if (!auctionPatchRes.ok) {
-                    // best-effort: delete created bid so the update does not go through
                     if (createdBidId) {
                         try {
                             await fetch(`${BID_URL}/${encodeURIComponent(createdBidId)}`, { method: 'DELETE' });
                         } catch (deleteErr) {
-                            // ignore delete errors
                             // eslint-disable-next-line no-console
                             console.warn('Failed to delete created bid after auction-deactivate failure', deleteErr);
                         }
                     }
-                    // attempt to roll back artwork current_price locally
                     setArtwork(prevArtwork);
                     setLatestBids(prevLatestBids);
 
@@ -240,17 +223,19 @@ const ArtworkPage = () => {
                     return { success: false, message: `Failed to deactivate auction: ${msg}` };
                 }
 
-                // mark auction as inactive locally
+                // mark auction inactive and mark artwork as sold locally
                 setAuctions(prev => (Array.isArray(prev) ? prev.map(a => {
                     if (String(a.id ?? a.auction_id) === String(auctionId)) {
                         return { ...(a ?? {}), is_active: false };
                     }
                     return a;
                 }) : prev));
-            }
 
-            // Both POST and PATCH artwork (and optionally auction deactivation) succeeded — update local state
-            setArtwork(prev => (prev ? { ...prev, currentBid: newBid } : prev));
+                setArtwork(prev => (prev ? { ...prev, currentBid: newBid, sold: true } : prev));
+            } else {
+                // normal success: update current bid and ensure sold is false
+                setArtwork(prev => (prev ? { ...prev, currentBid: newBid, sold: false } : prev));
+            }
 
             setLatestBids(prev => prev.map(info => {
                 if (String(info.auction_id) === String(auctionId)) {
@@ -261,7 +246,6 @@ const ArtworkPage = () => {
 
             return { success: true };
         } catch (err) {
-            // On network / unexpected error, attempt to roll back local state (no server-side delete attempt here)
             setArtwork(prevArtwork);
             setLatestBids(prevLatestBids);
             return { success: false, message: `Failed to save bid: ${String(err)}` };
@@ -284,7 +268,7 @@ const ArtworkPage = () => {
             <DisplayArtwork />
 
             <div style={{ marginTop: '1rem' , marginLeft: '21.5rem'}}>
-                <BiddingComponent initialBid={initialBid} onBidUpdate={handleBidUpdate} />
+                <BiddingComponent initialBid={initialBid} onBidUpdate={handleBidUpdate} sold={!!artwork?.sold} />
                 <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#444' }}>
                     {latestBids.length === 0 ? (
                         <div>No auctions / bids found</div>
