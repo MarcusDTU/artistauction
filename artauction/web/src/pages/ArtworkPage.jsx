@@ -1,4 +1,3 @@
-// javascript
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DisplayArtwork from '../components/DisplayArtwork';
@@ -8,23 +7,38 @@ const API_HOST = process.env.REACT_APP_API_HOST ?? 'http://localhost:8081';
 const AUCTION_URL = process.env.REACT_APP_AUCTION_URL ?? `${API_HOST}/auction`;
 const BID_URL = process.env.REACT_APP_BID_URL ?? `${API_HOST}/bid`;
 
+// Normalize incoming artwork objects from router state / backend
+const normalizeArtwork = (raw = {}) => ({
+  ...raw,
+  id: raw.id ?? raw.artwork_id ?? raw.artworkNumber ?? raw.slug ?? null,
+  startingBid: raw.startingBid ?? raw.starting_bid ?? null,
+  currentBid: raw.currentBid ?? raw.current_bid ?? null,
+});
+
 const ArtworkPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const initialArt = location.state?.art || {};
+
+    // normalize initial art so `id` exists if backend returned `artwork_id`
+    const initialRaw = location.state?.art || {};
+    const normalizedInitial = normalizeArtwork(initialRaw);
     const artist = location.state?.artist;
 
-    const [artwork, setArtwork] = useState(initialArt);
+    const [artwork, setArtwork] = useState(normalizedInitial);
     const [auctions, setAuctions] = useState([]);
     const [latestBids, setLatestBids] = useState([]);
 
+    // use a stable artId for effects and lint
+    const artId = artwork?.id ?? null;
+
     useEffect(() => {
-        if (!artwork?.id) return;
+        if (!artId) return;
 
         let mounted = true;
         (async () => {
             try {
-                const auctionsRes = await fetch(`${AUCTION_URL}/artwork/${encodeURIComponent(artwork.id)}`);
+                const auctionsRes = await fetch(`${AUCTION_URL}/artwork/${encodeURIComponent(artId)}`);
+                console.log("Fetched auctions response:", auctionsRes);
                 if (!auctionsRes.ok) return;
                 const fetchedAuctions = await auctionsRes.json();
 
@@ -36,7 +50,6 @@ const ArtworkPage = () => {
                     return;
                 }
 
-                // Normalize auctions so each auction has an `id` (accept `id` or `auction_id`)
                 const normalizedAuctions = fetchedAuctions.map(au => ({
                     ...au,
                     id: au.id ?? au.auction_id ?? null
@@ -45,28 +58,19 @@ const ArtworkPage = () => {
 
                 const infos = await Promise.all(normalizedAuctions.map(async (au) => {
                     const auId = au.id ?? au.auction_id ?? null;
-                    if (!auId) {
-                        return { auction_id: auId, bid_id: null, value: null, rawBid: null };
-                    }
+                    if (!auId) return { auction_id: auId, bid_id: null, value: null, rawBid: null };
                     try {
                         const r = await fetch(`${BID_URL}/latest/auction/${encodeURIComponent(auId)}`);
+                        console.log("Fetched latest bid response for auction", auId, ":", r);
                         if (!r.ok) return { auction_id: auId, bid_id: null, value: null, rawBid: null };
                         const body = await r.json();
-
-                        if (body && typeof body === 'object' && body.error) {
-                            return { auction_id: auId, bid_id: null, value: null, rawBid: null };
-                        }
-
                         const bidObj = Array.isArray(body) ? (body[0] ?? null) : body;
                         if (!bidObj) return { auction_id: auId, bid_id: null, value: null, rawBid: null };
-
-                        // Normalize bid fields (support bid_id / id and bid_amount / amount / value)
                         const normalizedBid = {
                             id: bidObj.id ?? bidObj.bid_id ?? null,
                             amount: bidObj.amount ?? bidObj.bid_amount ?? bidObj.value ?? null,
                             raw: bidObj
                         };
-
                         return {
                             auction_id: auId,
                             bid_id: normalizedBid.id,
@@ -81,7 +85,6 @@ const ArtworkPage = () => {
                 if (!mounted) return;
                 setLatestBids(infos);
 
-                // --- update artwork.currentBid from latest fetched bids (use the highest value) ---
                 const numericValues = infos
                   .map(i => (i?.value != null ? Number(i.value) : NaN))
                   .filter(v => Number.isFinite(v));
@@ -97,12 +100,12 @@ const ArtworkPage = () => {
                 }
 
             } catch (err) {
-                // silent fail
+                // ignore
             }
         })();
 
         return () => { mounted = false; };
-    }, [artwork?.id]);
+    }, [artId]);
 
     const handleBack = (e) => {
         e.preventDefault();
@@ -126,8 +129,7 @@ const ArtworkPage = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     auction_id: auctionId,
-                    artwork_id: artwork?.id ?? null,
-                    amount: newBid
+                    bid_amount: newBid
                 }),
             });
 
