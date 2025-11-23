@@ -18,7 +18,6 @@ const normalizeArtist = (raw, fallbackId) => {
     raw,
   };
 };
-
 const ArtistPortfolio = () => {
     const { artistId } = useParams();
     const location = useLocation();
@@ -35,12 +34,15 @@ const ArtistPortfolio = () => {
         let mounted = true;
 
         const shouldFetchArtist = !artist || !artist.bio;
-        const shouldFetchArtworks = !artist || !Array.isArray(artist.artworks) || artist.artworks.length === 0;
+        // Only fetch artworks if we don't have an artworks value at all (null/undefined).
+        // If artworks is an explicit empty array, do NOT re-fetch.
+        const shouldFetchArtworks = !artist || artist.artworks == null;
 
         if ((shouldFetchArtist || shouldFetchArtworks) && artistId) {
             setLoading(true);
             const base = process.env.REACT_APP_API_BASE || 'http://localhost:8081';
             const artistUrl = `${base}/artist/${encodeURIComponent(artistId)}`;
+            // corrected path to match backend routes
             const artworksUrl = `${base}/artwork/artist/${encodeURIComponent(artistId)}`;
 
             (async () => {
@@ -95,7 +97,7 @@ const ArtistPortfolio = () => {
                     const mergedRaw = { ...(artist || {}), ...(fetchedArtist || {}) };
                     const normalized = normalizeArtist(mergedRaw, artistId);
 
-                    // If artworks endpoint returned an array, use it (it ties previews to the artist)
+                    // Use artworks result even if it's an empty array (explicit no artworks)
                     if (Array.isArray(fetchedArtworks)) {
                         normalized.artworks = fetchedArtworks;
                     }
@@ -114,12 +116,6 @@ const ArtistPortfolio = () => {
             mounted = false;
         };
     }, [artist, artistId]);
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, []);
 
   const handleSelectArtwork = (art) => {
     const id = art?.id || art?.slug || art?.title;
