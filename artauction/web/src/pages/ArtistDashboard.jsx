@@ -18,12 +18,28 @@ const ArtistDashboard = () => {
                 const res = await fetch(ARTWORK_URL, { headers: { Accept: 'application/json' } });
                 if (!res.ok) throw new Error(`Server returned ${res.status}`);
                 const data = await res.json();
-                const list = Array.isArray(data) ? data : (data.items || []);
-                const mapped = list.map(a => ({
-                    ...a,
-                    imageUrl: a.image_url || a.imageUrl || a.image || '',
-                    title: a.title || a.name || 'Untitled'
-                }));
+                const list = Array.isArray(data) ? data : (data.items || data.results || []);
+                const mapped = list
+                    .map((a) => {
+                        const artworkId =
+                            a.id ??
+                            a.artwork_id ??
+                            a.artworkId ??
+                            a._id ??
+                            a.uuid ??
+                            a.external_id ??
+                            a.externalId;
+
+                        return {
+                            ...a,
+                            id: artworkId != null ? String(artworkId) : undefined,
+                            imageUrl: a.image_url || a.imageUrl || a.image || '',
+                            title: a.title || a.name || 'Untitled'
+                        };
+                    })
+                    // drop any items without a valid id
+                    .filter(a => a.id);
+
                 if (mounted) {
                     setArtworks(mapped);
                     setLoading(false);
@@ -41,8 +57,15 @@ const ArtistDashboard = () => {
         return () => { mounted = false; };
     }, []);
 
-    const handleEdit = (id) => {
-        navigate(`/edit-artwork/${id}`, {state: {artwork: artworks.find(a => a.id === id)}});
+    // Accept the artwork object and pass it directly into location.state
+    const handleEdit = (artwork) => {
+        const artworkId = artwork?.id;
+        if (!artworkId) {
+            // defensive: avoid navigating with undefined id
+            alert('Cannot open editor: missing artwork id');
+            return;
+        }
+        navigate(`/edit-artwork/${artworkId}`, { state: { artwork } });
     };
 
     const handleUpload = () => {
@@ -106,7 +129,8 @@ const ArtistDashboard = () => {
                             </div>
 
                             <div style={styles.right}>
-                                <button style={styles.button} onClick={() => handleEdit(a.id)}>Edit</button>
+                                {/* pass the artwork object directly to handleEdit */}
+                                <button style={styles.button} onClick={() => handleEdit(a)}>Edit</button>
                                 <div
                                     style={{
                                         ...styles.status,

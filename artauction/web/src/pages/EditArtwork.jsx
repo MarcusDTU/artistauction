@@ -65,20 +65,41 @@ const EditArtwork = () => {
         );
     }
 
-    // helper to PATCH artwork; merges returned JSON into local state
     const patchArtwork = async (patch) => {
-        const url = `${ARTWORK_URL}/${artwork.id}`;
+        const artworkId = artwork?.id ?? id;
+        if (!artworkId || String(artworkId).startsWith('idx-')) {
+            const msg = `Missing/invalid artwork id: ${String(artworkId)}`;
+            // eslint-disable-next-line no-console
+            console.error(msg);
+            throw new Error(msg);
+        }
+
+        // ensure base has no trailing slash and encode id
+        const base = ARTWORK_URL.replace(/\/$/, '');
+        const url = `${base}/${encodeURIComponent(String(artworkId))}`;
+
+        // debug: show exact URL and payload
+        // eslint-disable-next-line no-console
+        console.debug('PATCH', url, patch);
+
         const res = await fetch(url, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
             body: JSON.stringify(patch)
         });
+
         if (!res.ok) {
             const bodyText = await res.text().catch(() => '');
-            throw new Error(`Server returned ${res.status}: ${bodyText}`);
+            const errMsg = `Server returned ${res.status} for ${url}: ${bodyText}`;
+            // eslint-disable-next-line no-console
+            console.error(errMsg);
+            if (res.status === 404) {
+                alert(`Not found (404) when PATCHing ${url}. Confirm route and id format.`);
+            }
+            throw new Error(errMsg);
         }
+
         const data = await res.json().catch(() => ({}));
-        // update local artwork with server response (or with patch as fallback)
         setArtwork(prev => ({ ...prev, ...patch, ...data }));
         return data;
     };
@@ -95,10 +116,11 @@ const EditArtwork = () => {
             await patchArtwork(payload);
             setIsEditingTitle(false);
             console.log(`Saved title for artwork ${artwork.id}:`, payload);
+            alert(`Title changed to "${title}"`);
         } catch (err) {
             // eslint-disable-next-line no-console
             console.error('Failed to save title', err);
-            alert(`Failed to save title: ${err.message || 'unknown error'}`);
+            alert(`Failed to save title for artwork ${artwork?.id ?? id}: ${err.message || 'unknown error'}`);
         }
     };
 
@@ -114,10 +136,11 @@ const EditArtwork = () => {
             await patchArtwork(payload);
             setIsEditingDescription(false);
             console.log(`Saved description for artwork ${artwork.id}:`, payload);
+            alert('Description changed to "' + description + '"');
         } catch (err) {
             // eslint-disable-next-line no-console
             console.error('Failed to save description', err);
-            alert(`Failed to save description: ${err.message || 'unknown error'}`);
+            alert(`Failed to save description for artwork ${artwork?.id ?? id}: ${err.message || 'unknown error'}`);
         }
     };
 
@@ -131,7 +154,7 @@ const EditArtwork = () => {
     const handleSetPrice = async () => {
         const parsed = parseFloat(priceInput);
         if (isNaN(parsed) || parsed <= 0) {
-            alert('Please enter a positive price.');
+            alert(`Please enter a positive price for artwork ${artwork?.id ?? id}.`);
             return;
         }
         const rounded = Number(parsed.toFixed(2));
@@ -141,16 +164,17 @@ const EditArtwork = () => {
             await patchArtwork(payload);
             setPriceInput(rounded.toFixed(2));
             console.log(`Set secret price for artwork ${artwork.id}:`, payload);
+            alert("Price updated to " + rounded.toFixed(2));
         } catch (err) {
             // eslint-disable-next-line no-console
             console.error('Failed to set price', err);
-            alert(`Failed to set price: ${err.message || 'unknown error'}`);
+            alert(`Failed to set price for artwork ${artwork?.id ?? id}: ${err.message || 'unknown error'}`);
         }
     };
 
     const handleUploadMoreImages = () => {
         console.warn('handleUploadMoreImages() not implemented');
-        alert('Upload more images feature not implemented yet.');
+        alert(`Upload more images feature not implemented yet for artwork ${artwork?.id ?? id}.`);
     };
 
     return (
