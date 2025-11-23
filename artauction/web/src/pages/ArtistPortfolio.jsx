@@ -20,54 +20,100 @@ const normalizeArtist = (raw, fallbackId) => {
 };
 
 const ArtistPortfolio = () => {
-    const {artistId} = useParams();
+    const { artistId } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
     const initialArtist = location.state?.artist || null;
 
-    // start as loading when there's no initial artist or the initial artist lacks a bio
     const [artist, setArtist] = useState(initialArtist);
     const [loading, setLoading] = useState(!initialArtist || !initialArtist.bio);
     const [error, setError] = useState(null);
     const [notice, setNotice] = useState(null);
     const timeoutRef = useRef(null);
 
-  useEffect(() => {
-    let mounted = true;
-    const needFetch = !artist || !artist.bio; // fetch if missing or missing bio
+    useEffect(() => {
+        let mounted = true;
 
-    if (needFetch && artistId) {
-      setLoading(true);
-      const base = process.env.REACT_APP_API_BASE || 'http://localhost:8081';
-      const url = `${base}/artist/${encodeURIComponent(artistId)}`;
-      (async () => {
-        try {
-          const res = await fetch(url);
-          const ct = res.headers.get('content-type') || '';
-          if (!res.ok) {
-            const body = await res.text();
-            throw new Error(`${res.status} ${res.statusText} - ${body.slice(0, 300)}`);
-          }
-          if (!ct.includes('application/json')) {
-            const body = await res.text();
-            throw new Error(`Expected JSON but got ${ct || 'unknown'}: ${body.slice(0, 300)}`);
-          }
-          const data = await res.json();
-          if (!mounted) return;
-          // merge fetched data into any existing partial artist from navigation state
-          setArtist(prev => normalizeArtist({...(prev || {}), ...data}, artistId));
-        } catch (err) {
-          if (!mounted) return;
-          setError(err.message || String(err));
-        } finally {
-          if (mounted) setLoading(false);
+        const shouldFetchArtist = !artist || !artist.bio;
+        const shouldFetchArtworks = !artist || !Array.isArray(artist.artworks) || artist.artworks.length === 0;
+
+        if ((shouldFetchArtist || shouldFetchArtworks) && artistId) {
+            setLoading(true);
+            const base = process.env.REACT_APP_API_BASE || 'http://localhost:8081';
+            const artistUrl = `${base}/artist/${encodeURIComponent(artistId)}`;
+            const artworksUrl = `${base}/artwork/artist/${encodeURIComponent(artistId)}`;
+
+            (async () => {
+                try {
+                    // Fetch artist and artworks in parallel
+                    const [artistRes, artworksRes] = await Promise.all([
+                        fetch(artistUrl).catch(e => ({ ok: false, _err: e })),
+                        fetch(artworksUrl).catch(e => ({ ok: false, _err: e }))
+                    ]);
+
+                    let fetchedArtist = null;
+                    let fetchedArtworks = null;
+
+                    // Process artist response
+                    if (artistRes) {
+                        if (artistRes.ok) {
+                            const ct = artistRes.headers.get('content-type') || '';
+                            if (!ct.includes('application/json')) {
+                                const body = await artistRes.text();
+                                throw new Error(`Artist endpoint returned non-JSON: ${ct || 'unknown'} — ${body.slice(0, 300)}`);
+                            }
+                            fetchedArtist = await artistRes.json();
+                        } else if (artistRes._err) {
+                            throw artistRes._err;
+                        } else {
+                            const body = await artistRes.text();
+                            throw new Error(`Artist fetch failed: ${artistRes.status} ${artistRes.statusText} - ${body.slice(0, 300)}`);
+                        }
+                    }
+
+                    // Process artworks response (non-fatal if it fails, but surfaced)
+                    if (artworksRes) {
+                        if (artworksRes.ok) {
+                            const ct = artworksRes.headers.get('content-type') || '';
+                            if (!ct.includes('application/json')) {
+                                const body = await artworksRes.text();
+                                throw new Error(`Artworks endpoint returned non-JSON: ${ct || 'unknown'} — ${body.slice(0, 300)}`);
+                            }
+                            fetchedArtworks = await artworksRes.json();
+                        } else if (artworksRes._err) {
+                            // treat as error
+                            throw artworksRes._err;
+                        } else {
+                            const body = await artworksRes.text();
+                            throw new Error(`Artworks fetch failed: ${artworksRes.status} ${artworksRes.statusText} - ${body.slice(0, 300)}`);
+                        }
+                    }
+
+                    if (!mounted) return;
+
+                    // Merge: prefer fetched artist data, fallback to existing partial artist
+                    const mergedRaw = { ...(artist || {}), ...(fetchedArtist || {}) };
+                    const normalized = normalizeArtist(mergedRaw, artistId);
+
+                    // If artworks endpoint returned an array, use it (it ties previews to the artist)
+                    if (Array.isArray(fetchedArtworks)) {
+                        normalized.artworks = fetchedArtworks;
+                    }
+
+                    setArtist(normalized);
+                } catch (err) {
+                    if (!mounted) return;
+                    setError(err.message || String(err));
+                } finally {
+                    if (mounted) setLoading(false);
+                }
+            })();
         }
-      })();
-    }
-    return () => {
-      mounted = false;
-    };
-  }, [artist, artistId]);
+
+        return () => {
+            mounted = false;
+        };
+    }, [artist, artistId]);
 
   useEffect(() => {
     return () => {
