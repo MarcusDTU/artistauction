@@ -1,4 +1,3 @@
-// javascript
 import React, { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import '../styles/artists.css';
