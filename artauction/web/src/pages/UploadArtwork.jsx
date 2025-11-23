@@ -63,6 +63,11 @@ const UploadArtwork = () => {
     const [saving, setSaving] = useState(false);
     const navigate = useNavigate();
 
+    // controlled form fields
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [secretPriceStr, setSecretPriceStr] = useState('');
+
     useEffect(() => {
         return () => {
             files.forEach(f => URL.revokeObjectURL(f.url));
@@ -100,32 +105,40 @@ const UploadArtwork = () => {
     };
 
     const handleSaveExit = async () => {
-        // read fields rendered by the TextBox / NumberBox components by id
-        const titleEl = document.getElementById('art-title');
-        const descEl = document.getElementById('art-description');
-        const secretEl = document.getElementById('secret-price');
+        // prefer controlled state; fallback to DOM lookup for compatibility
+        let titleVal = (title ?? '').trim();
+        let descVal = (description ?? '').trim();
+        let secretRaw = (secretPriceStr ?? '').trim();
 
-        const title = (titleEl?.value ?? '').trim();
-        const description = (descEl?.value ?? '').trim();
-        const secretRaw = (secretEl?.value ?? '').trim();
+        if (!titleVal) {
+            const titleEl = document.getElementById('art-title');
+            if (titleEl && typeof titleEl.value === 'string') titleVal = titleEl.value.trim();
+        }
+        if (!descVal) {
+            const descEl = document.getElementById('art-description');
+            if (descEl && typeof descEl.value === 'string') descVal = descEl.value.trim();
+        }
+        if (secretRaw === '') {
+            const secretEl = document.getElementById('secret-price');
+            if (secretEl && typeof secretEl.value === 'string') secretRaw = secretEl.value.trim();
+        }
+
         const secretPrice = secretRaw === '' ? null : Number(secretRaw);
 
-        if (!title) {
+        if (!titleVal) {
             alert('Title is required');
             return;
         }
 
         setSaving(true);
         try {
-            // encode files as data URLs so backend receives everything in one JSON payload
             const images = files.length ? await filesToDataUrls(files) : [];
 
             const payload = {
-                title,
-                description,
+                title: titleVal,
+                description: descVal,
                 end_price: Number.isFinite(secretPrice) ? secretPrice : null,
-                images, // array of { name, type, dataUrl }
-                // optionally add other metadata here (artist id, timestamps) if available
+                images
             };
 
             const res = await fetch(ARTWORK_URL, {
@@ -141,12 +154,10 @@ const UploadArtwork = () => {
                 return;
             }
 
-            // success
             clearSelection();
-            // clear input fields if present
-            if (titleEl) titleEl.value = '';
-            if (descEl) descEl.value = '';
-            if (secretEl) secretEl.value = '';
+            setTitle('');
+            setDescription('');
+            setSecretPriceStr('');
 
             alert('Artwork saved');
             navigate(-1);
@@ -177,7 +188,7 @@ const UploadArtwork = () => {
                 }}
                 onMouseEnter={() => setHover(true)}
                 onMouseLeave={() => setHover(false)}
-                style={{...styles.box, ...(hover ? styles.boxHover : {})}}
+                style={{ ...styles.box, ...(hover ? styles.boxHover : {}) }}
                 aria-label="Upload images here"
             >
                 <div style={styles.title}>Upload images here</div>
@@ -189,7 +200,7 @@ const UploadArtwork = () => {
                     accept="image/*"
                     multiple
                     onChange={handleFiles}
-                    style={{display: 'none'}}
+                    style={{ display: 'none' }}
                 />
             </div>
 
@@ -198,7 +209,7 @@ const UploadArtwork = () => {
                     <div style={styles.previews}>
                         {files.map((f, i) => (
                             <div key={i} aria-label={`preview-${i}`}>
-                                <img src={f.url} alt={f.file.name} style={styles.thumb}/>
+                                <img src={f.url} alt={f.file.name} style={styles.thumb} />
                                 <div style={styles.info}>{f.file.name}</div>
                             </div>
                         ))}
@@ -208,10 +219,12 @@ const UploadArtwork = () => {
             )}
 
             <div style={styles.textBoxesContainer}>
-                <TextBox title="Add title" id="art-title"/>
+                <TextBox title="Add title" id="art-title" value={title} onChange={(e) => setTitle(e.target?.value ?? '')} />
                 <TextBox title="Add description" id="art-description" placeholder="Enter description"
-                         hint="Provide an optional description for your artwork"/>
-                <NumberBox title="Set secret price" id="secret-price" hint="Enter a positive number"/>
+                         hint="Provide an optional description for your artwork" value={description}
+                         onChange={(e) => setDescription(e.target?.value ?? '')} />
+                <NumberBox title="Set secret price" id="secret-price" hint="Enter a positive number"
+                           value={secretPriceStr} onChange={(e) => setSecretPriceStr(e.target?.value ?? '')} />
             </div>
 
             <div style={styles.actionsContainer}>
@@ -220,7 +233,6 @@ const UploadArtwork = () => {
                 </button>
                 <button type="button" onClick={handleCancelUpload} style={styles.cancelBtn}>Cancel upload</button>
             </div>
-
         </div>
     );
 };
