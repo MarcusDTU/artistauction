@@ -1,3 +1,4 @@
+// javascript
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
@@ -13,26 +14,26 @@ const containerStyle = {
 };
 
 const bidStyle = {
-  fontSize: '1.5rem',
-  fontWeight: 600,
+  fontSize: '0.95rem',
+  color: '#333',
   margin: 0,
 };
 
 const inputRow = {
   display: 'flex',
-  gap: '0.5rem',
+  gap: '.5rem',
   alignItems: 'center',
 };
 
 const inputStyle = {
   flex: 1,
-  padding: '0.5rem',
+  padding: '.5rem',
   borderRadius: 4,
   border: '1px solid #ccc',
 };
 
 const buttonStyle = {
-  padding: '0.5rem 0.75rem',
+  padding: '.5rem .75rem',
   borderRadius: 4,
   border: 'none',
   background: '#007bff',
@@ -42,68 +43,121 @@ const buttonStyle = {
 
 const errorStyle = {
   color: '#b00020',
-  fontSize: '0.875rem',
-  margin: 0,
+  fontSize: '.9rem',
+};
+
+const twoDecimalRegex = /^\d*(?:\.\d{0,2})?$/;
+
+const formatToTwo = (v) => {
+  if (v == null || v === '') return '0.00';
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '0.00';
+  return n.toFixed(2);
 };
 
 const BiddingComponent = ({ initialBid = 0, onBidUpdate }) => {
-    const [bid, setBid] = useState(initialBid ?? 0);
-    const [error, setError] = useState(null);
+  // initialBid is treated as the current highest known bid
+  const [highest, setHighest] = useState(Number(initialBid) || 0);
+  const [input, setInput] = useState('');
+  const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
-    useEffect(() => {
-        setBid(initialBid ?? 0);
-        setError(null);
-    }, [initialBid]);
+  useEffect(() => {
+    setHighest(Number(initialBid) || 0);
+    setError(null);
+    // keep user's current typed input untouched when highest changes
+  }, [initialBid]);
 
-    const handleChange = (e) => {
-        const v = Number(e.target.value);
-        if (!Number.isFinite(v)) {
-            setBid(0);
-            setError('Invalid number');
-            return;
-        }
-        if (v < 0) {
-            setBid(v);
-            setError('Bid must be 0 or greater');
-            return;
-        }
-        setBid(v);
-        setError(null);
-    };
+  const handleChange = (e) => {
+    const v = e.target.value;
+    if (v.startsWith('-')) {
+      setInput(v);
+      setError('Bid must be 0 or greater');
+      return;
+    }
+    if (v === '' || twoDecimalRegex.test(v)) {
+      setInput(v);
+      setError(null);
+    } else {
+      setError('Enter a number with up to two decimal places');
+    }
+  };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (error) return;
-        onBidUpdate?.(bid);
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const str = input === '' ? '0' : input;
+    const parsed = Number(str);
+    if (!Number.isFinite(parsed)) {
+      setError('Invalid number');
+      return;
+    }
+    if (parsed < 0) {
+      setError('Bid must be 0 or greater');
+      return;
+    }
+    const rounded = Number(parsed.toFixed(2));
 
-    return (
-        <div style={containerStyle}>
-            <p style={bidStyle}>Current: {bid}</p>
+    if (rounded <= highest) {
+      setError(`Bid must be higher than the current bid of ${formatToTwo(highest)}`);
+      return;
+    }
 
-            <form onSubmit={handleSubmit}>
-                <div style={inputRow}>
-                    <input
-                        type="number"
-                        value={bid}
-                        onChange={handleChange}
-                        step="1"
-                        min="0"
-                        aria-label="bid amount"
-                        style={inputStyle}
-                    />
-                    <button type="submit" style={buttonStyle}>Bid</button>
-                </div>
-            </form>
+    setSubmitting(true);
+    setError(null);
 
-            {error && <p style={errorStyle}>{error}</p>}
-        </div>
-    );
+    try {
+      const result = await Promise.resolve(onBidUpdate?.(rounded));
+      // parent should return { success: boolean, message?: string } or truthy on success
+      if (!result) {
+        // no structured response — assume success (but keep highest update optimistic)
+        setHighest(rounded);
+        setInput('');
+      } else if (result.success === false) {
+        setError(result.message ?? 'Bid was rejected');
+      } else {
+        // success
+        setHighest(rounded);
+        setInput('');
+      }
+    } catch (err) {
+      setError('Failed to submit bid');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div style={containerStyle}>
+      <div style={bidStyle}>
+        Highest bid: <strong>{formatToTwo(highest)}</strong>
+      </div>
+
+      <form onSubmit={handleSubmit} style={inputRow}>
+        <input
+          type="text"
+          inputMode="decimal"
+          value={input}
+          onChange={handleChange}
+          placeholder="Enter your bid"
+          aria-label="bid amount"
+          style={inputStyle}
+        />
+        <button type="submit" disabled={submitting} style={buttonStyle}>
+          {submitting ? '...' : 'Bid'}
+        </button>
+      </form>
+
+      {error && <div style={errorStyle}>{error}</div>}
+      <div style={{ fontSize: '.85rem', color: '#666' }}>
+        Tip: bid must be strictly greater than the highest bid and have at most two decimals.
+      </div>
+    </div>
+  );
 };
 
 BiddingComponent.propTypes = {
-    initialBid: PropTypes.number,
-    onBidUpdate: PropTypes.func,
+  initialBid: PropTypes.number, // current highest known bid
+  onBidUpdate: PropTypes.func,  // async (newBid) => ({ success: boolean, message?: string }) or truthy
 };
 
 export default BiddingComponent;

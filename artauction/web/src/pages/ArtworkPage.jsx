@@ -117,33 +117,64 @@ const ArtworkPage = () => {
         }
     };
 
-    const handleBidUpdate = async (newBid) => {
-        setArtwork((prev) => (prev ? { ...prev, currentBid: newBid } : prev));
+    async function handleBidUpdate(newBid) {
+        // compute current highest known bid
+        const knownValues = [
+            ...(latestBids || []).map(i => (i?.value != null ? Number(i.value) : NaN)),
+            Number(artwork?.currentBid ?? artwork?.startingBid ?? NaN)
+        ].filter(v => Number.isFinite(v));
+        const highest = knownValues.length ? Math.max(...knownValues) : 0;
+
+        if (Number.isNaN(newBid)) {
+            return { success: false, message: 'Invalid bid value' };
+        }
+
+        // reject if not strictly greater than current highest
+        if (newBid <= highest) {
+            return {
+                success: false,
+                message: `Bid must be higher than the current bid of ${highest}`
+            };
+        }
+
+        // optimistic update
+        setArtwork(prev => (prev ? { ...prev, currentBid: newBid } : prev));
 
         const auctionId = auctions?.[0]?.id ?? latestBids?.[0]?.auction_id ?? null;
-        if (!auctionId) return;
+        if (!auctionId) {
+            return { success: false, message: 'No auction found for this artwork' };
+        }
 
         try {
-            await fetch(`${BID_URL}`, {
+            const res = await fetch(`${BID_URL}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify({
                     auction_id: auctionId,
+                    artwork_id: artId,
                     bid_amount: newBid
                 }),
             });
 
-            setLatestBids((prev) => prev.map(info => {
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                const msg = body?.error?.message ?? `Server returned ${res.status}`;
+                return { success: false, message: `Failed to save bid: ${msg}` };
+            }
+
+            // update local latestBids on success
+            setLatestBids(prev => prev.map(info => {
                 if (String(info.auction_id) === String(auctionId)) {
                     return { ...info, value: newBid, bid_id: info.bid_id ?? 'pending' };
                 }
                 return info;
             }));
+
+            return { success: true };
         } catch (err) {
-            // eslint-disable-next-line no-console
-            console.warn('Failed to persist bid', err);
+            return { success: false, message: `Failed to save bid: ${String(err)}` };
         }
-    };
+    }
 
     const initialBid = (artwork?.currentBid ?? artwork?.startingBid ?? 0);
 
