@@ -43,3 +43,14 @@ export const createBid = async (bid) => {
         return {data: null, error: err};
     }
 }
+
+export const getLatestBidByAuctionId = async (auctionId) => {
+    const {data, error} = await supabase
+        .from('Bid')
+        .select('*')
+        .eq('auction_id', auctionId)
+        .order('bid_amount', {ascending: false})
+        .limit(1)
+        .single();
+    return {data, error};
+}
