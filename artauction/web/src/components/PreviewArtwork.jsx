@@ -61,7 +61,7 @@ const descStyle = {
 const PreviewArtwork = ({ art, onClick }) => (
     <div style={cardStyle} onClick={onClick}>
         <div style={imgWrapperStyle}>
-            <img src={art.imageUrl || art.image} alt={art.title} style={imgStyle} />
+            <img src={art.imageUrl || art.image_url} alt={art.title} style={imgStyle} />
         </div>
         <div style={metaStyle}>
             <strong style={titleStyle}>{art.title}</strong>
@@ -75,7 +75,7 @@ PreviewArtwork.propTypes = {
         id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         title: PropTypes.string,
         description: PropTypes.string,
-        image: PropTypes.string,
+        image_url: PropTypes.string,
     }).isRequired,
     onClick: PropTypes.func,
 };
