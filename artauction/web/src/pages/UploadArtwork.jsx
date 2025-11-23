@@ -1,8 +1,8 @@
-// javascript
 import React, {useRef, useState, useEffect} from 'react';
 import { useNavigate } from "react-router-dom";
 import TextBox from "../components/TextBox";
 import NumberBox from "../components/NumberBox";
+import { CLOUDINARY_UPLOAD_URL, CLOUDINARY_UPLOAD_PRESET } from '../cloudinary-client';
 
 const API_HOST = process.env.REACT_APP_API_HOST ?? 'http://localhost:8081';
 const ARTWORK_URL = process.env.REACT_APP_ARTWORK_URL ?? `${API_HOST}/artwork`;
@@ -96,13 +96,26 @@ const UploadArtwork = () => {
         if (inputRef.current) inputRef.current.value = '';
     };
 
-    const filesToDataUrls = (fileEntries) => {
-        return Promise.all(fileEntries.map(({ file }) => new Promise((res, rej) => {
-            const reader = new FileReader();
-            reader.onload = () => res({ name: file.name, type: file.type, dataUrl: reader.result });
-            reader.onerror = () => rej(new Error('Failed to read file'));
-            reader.readAsDataURL(file);
-        })));
+    // upload a single File to Cloudinary, return the secure URL or throw
+    const uploadToCloudinary = async (file) => {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+        const res = await fetch(CLOUDINARY_UPLOAD_URL, {
+            method: 'POST',
+            body: fd
+        });
+
+        if (!res.ok) {
+            let bodyText = await res.text().catch(() => '');
+            throw new Error(`Cloudinary upload failed: ${res.status} ${bodyText}`);
+        }
+
+        const body = await res.json();
+        const url = body?.secure_url || body?.url;
+        if (!url) throw new Error('Cloudinary response missing secure_url');
+        return url;
     };
 
     // helper to accept event, direct string, number or { value }
@@ -143,14 +156,19 @@ const UploadArtwork = () => {
 
         setSaving(true);
         try {
-            const images = files.length ? await filesToDataUrls(files) : [];
+            // upload files to Cloudinary first; fail if any upload fails
+            const imageUrls = files.length
+                ? await Promise.all(files.map(f => uploadToCloudinary(f.file)))
+                : [];
+
+            const firstImageUrl = imageUrls.length ? imageUrls[0] : null;
 
             const payload = {
                 title: titleVal,
                 description: descVal,
                 artist_id: 1, // hardcoded for demo purposes
-                end_price: Number.isFinite(secretPrice) ? secretPrice : null,
-                image_url: images
+                end_price: secretPrice !== null ? secretPrice : null,
+                image_url: firstImageUrl
             };
 
             const res = await fetch(ARTWORK_URL, {
@@ -176,7 +194,7 @@ const UploadArtwork = () => {
         } catch (err) {
             // eslint-disable-next-line no-console
             console.error('Save artwork error', err);
-            alert('Failed to save artwork');
+            alert(`Failed to save artwork: ${err?.message ?? 'unknown error'}`);
         } finally {
             setSaving(false);
         }
