@@ -71,7 +71,7 @@ const DisplayArtwork = ({ art = {}, imageWidth = 420, style = {}, className }) =
             ? stateArt
             : (id ? SAMPLE_ARTWORKS.find(a => String(a.id) === String(id)) || SAMPLE_ARTWORKS[0] : SAMPLE_ARTWORKS[0]);
 
-    const imageSrc = displayed.image || displayed.imageUrl || '';
+    const imageSrc = displayed.image_url || displayed.imageUrl || '';
     const title = displayed.title || 'Untitled';
     const artistName = displayed.artist?.name || displayed.artistName || 'Unknown artist';
     const description = displayed.description || 'No description available.';
@@ -100,7 +100,7 @@ const DisplayArtwork = ({ art = {}, imageWidth = 420, style = {}, className }) =
 
 DisplayArtwork.propTypes = {
   art: PropTypes.shape({
-    image: PropTypes.string,
+    image_url: PropTypes.string,
     title: PropTypes.string,
     description: PropTypes.string,
     artist: PropTypes.shape({

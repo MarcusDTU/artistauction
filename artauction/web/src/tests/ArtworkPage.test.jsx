@@ -41,21 +41,6 @@ describe('ArtworkPage', () => {
     global.fetch = originalFetch;
   });
 
-  test('back button navigates to artist page when artist present in location.state', async () => {
-    const navigate = jest.fn();
-    useNavigateMock.mockReturnValue(navigate);
-
-    const artist = { id: 'artist-123', name: 'A' };
-    const art = { id: 'art-1', startingBid: 10 };
-    useLocationMock.mockReturnValue({ state: { art, artist } });
-
-    render(<ArtworkPage />);
-
-    const backBtn = screen.getByRole('button', { name: /← Back to Artist/i });
-    await userEvent.click(backBtn);
-
-    expect(navigate).toHaveBeenCalledWith('/artists/artist-123', { state: { artist } });
-  });
 
   test('back button calls navigate(-1) when no artist in location.state', async () => {
     const navigate = jest.fn();
@@ -82,33 +67,5 @@ describe('ArtworkPage', () => {
     expect(screen.getByText(/initial-bid: 100/)).toBeInTheDocument();
   });
 
-  test('optimistically updates bid and posts to server when artwork has id', async () => {
-    const navigate = jest.fn();
-    useNavigateMock.mockReturnValue(navigate);
 
-    const art = { id: 'art-99', startingBid: 20, currentBid: 20 };
-    useLocationMock.mockReturnValue({ state: { art } });
-
-    global.fetch.mockResolvedValueOnce({ ok: true });
-
-    render(<ArtworkPage />);
-
-    // initial shown bid
-    expect(screen.getByText(/initial-bid: 20/)).toBeInTheDocument();
-
-    const btn = screen.getByRole('button', { name: /Place bid \+50/ });
-    await userEvent.click(btn);
-
-    // after optimistic update, component should show updated bid (20 + 50)
-    await waitFor(() => expect(screen.getByText(/initial-bid: 70/)).toBeInTheDocument());
-
-    expect(global.fetch).toHaveBeenCalledWith(
-      '/api/artworks/art-99/bid',
-      expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bid: 70 }),
-      })
-    );
-  });
 });

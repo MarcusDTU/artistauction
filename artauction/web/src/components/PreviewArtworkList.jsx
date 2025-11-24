@@ -24,25 +24,56 @@ const linkStyle = {
 
 const PreviewArtworkList = ({ artworks = [], onSelect }) => {
 
-    const list = Array.isArray(artworks) && artworks.length > 0 ? artworks : SAMPLE_ARTWORKS;
+    if (artworks == null) {
+        const list = SAMPLE_ARTWORKS;
+        return (
+            <section className="preview-artwork-list" style={gridStyle}>
+                {list.map((art) => {
+                    const id = art.id || art.slug || art.title || 'sample';
+                    return (
+                        <Link
+                            key={id}
+                            to={`/artworks/${encodeURIComponent(id)}`}
+                            state={{ art }}
+                            style={linkStyle}
+                            onClick={() => onSelect && onSelect(art)}
+                        >
+                            <PreviewArtwork art={art} />
+                        </Link>
+                    );
+                })}
+            </section>
+        );
+    }
+    // If an explicit empty array was provided -> render nothing
+    if (Array.isArray(artworks) && artworks.length === 0) {
+        return null;
+    }
 
-    return (
-        <section className="preview-artwork-list" style={gridStyle}>
-            {list.map((art) => {
-                const id = art.id || art.slug || art.title || 'sample';
-                return (
-                    <Link
-                        key={id}
-                        to={`/artworks/${encodeURIComponent(id)}`}
-                        state={{art}}
-                        style={linkStyle}
-                    >
-                        <PreviewArtwork art={art} />
-                    </Link>
-                );
-            })}
-        </section>
-    );
+    // If artworks is a non-empty array -> render it
+    if (Array.isArray(artworks)) {
+        return (
+            <section className="preview-artwork-list" style={gridStyle}>
+                {artworks.map((art) => {
+                    const id = art.id || art.slug || art.title || 'sample';
+                    return (
+                        <Link
+                            key={id}
+                            to={`/artworks/${encodeURIComponent(id)}`}
+                            state={{ art }}
+                            style={linkStyle}
+                            onClick={() => onSelect && onSelect(art)}
+                        >
+                            <PreviewArtwork art={art} />
+                        </Link>
+                    );
+                })}
+            </section>
+        );
+    }
+
+    // Fallback: render nothing for unexpected types
+    return null;
 };
 
 PreviewArtworkList.propTypes = {

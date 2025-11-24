@@ -3,6 +3,10 @@ import {useParams, useLocation, useNavigate} from 'react-router-dom';
 import {Box, Typography, IconButton, TextField, Button} from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 
+const LOGGED_IN_ARTIST_ID = 2;
+const API_HOST = process.env.REACT_APP_API_HOST ?? 'http://localhost:8081';
+const ARTWORK_URL = process.env.REACT_APP_ARTWORK_URL ?? `${API_HOST}/artwork/`;
+
 const fallbackArtworks = [
     {
         id: 1,
@@ -61,16 +65,63 @@ const EditArtwork = () => {
         );
     }
 
+    const patchArtwork = async (patch) => {
+        const artworkId = artwork?.id ?? id;
+        if (!artworkId || String(artworkId).startsWith('idx-')) {
+            const msg = `Missing/invalid artwork id: ${String(artworkId)}`;
+            // eslint-disable-next-line no-console
+            console.error(msg);
+            throw new Error(msg);
+        }
+
+        // ensure base has no trailing slash and encode id
+        const base = ARTWORK_URL.replace(/\/$/, '');
+        const url = `${base}/${encodeURIComponent(String(artworkId))}`;
+
+        // debug: show exact URL and payload
+        // eslint-disable-next-line no-console
+        console.debug('PATCH', url, patch);
+
+        const res = await fetch(url, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify(patch)
+        });
+
+        if (!res.ok) {
+            const bodyText = await res.text().catch(() => '');
+            const errMsg = `Server returned ${res.status} for ${url}: ${bodyText}`;
+            // eslint-disable-next-line no-console
+            console.error(errMsg);
+            if (res.status === 404) {
+                alert(`Not found (404) when PATCHing ${url}. Confirm route and id format.`);
+            }
+            throw new Error(errMsg);
+        }
+
+        const data = await res.json().catch(() => ({}));
+        setArtwork(prev => ({ ...prev, ...patch, ...data }));
+        return data;
+    };
+
     // Title handlers
     const handleStartEditTitle = () => setIsEditingTitle(true);
     const handleCancelTitle = () => {
         setTitle(artwork.title);
         setIsEditingTitle(false);
     };
-    const handleSaveTitle = () => {
-        setArtwork(prev => ({...prev, title}));
-        setIsEditingTitle(false);
-        console.log(`Saved title for artwork ${artwork.id}:`, {title});
+    const handleSaveTitle = async () => {
+        try {
+            const payload = { title, artist_id: LOGGED_IN_ARTIST_ID };
+            await patchArtwork(payload);
+            setIsEditingTitle(false);
+            console.log(`Saved title for artwork ${artwork.id}:`, payload);
+            alert(`Title changed to "${title}"`);
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to save title', err);
+            alert(`Failed to save title for artwork ${artwork?.id ?? id}: ${err.message || 'unknown error'}`);
+        }
     };
 
     // Description handlers (separate)
@@ -79,10 +130,18 @@ const EditArtwork = () => {
         setDescription(artwork.description || '');
         setIsEditingDescription(false);
     };
-    const handleSaveDescription = () => {
-        setArtwork(prev => ({...prev, description}));
-        setIsEditingDescription(false);
-        console.log(`Saved description for artwork ${artwork.id}:`, {description});
+    const handleSaveDescription = async () => {
+        try {
+            const payload = { description, artist_id: LOGGED_IN_ARTIST_ID };
+            await patchArtwork(payload);
+            setIsEditingDescription(false);
+            console.log(`Saved description for artwork ${artwork.id}:`, payload);
+            alert('Description changed to "' + description + '"');
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to save description', err);
+            alert(`Failed to save description for artwork ${artwork?.id ?? id}: ${err.message || 'unknown error'}`);
+        }
     };
 
     const handlePriceChange = (e) => {
@@ -92,21 +151,46 @@ const EditArtwork = () => {
         }
     };
 
-    const handleSetPrice = () => {
+    const handleSetPrice = async () => {
         const parsed = parseFloat(priceInput);
         if (isNaN(parsed) || parsed <= 0) {
-            alert('Please enter a positive price.');
+            alert(`Please enter a positive price for artwork ${artwork?.id ?? id}.`);
             return;
         }
         const rounded = Number(parsed.toFixed(2));
-        setArtwork(prev => ({...prev, price: rounded}));
-        setPriceInput(rounded.toFixed(2));
-        console.log(`Set secret price for artwork ${artwork.id}:`, rounded);
+        try {
+            // send price and artist id; backend may expect price or end_price
+            const payload = { end_price: rounded, artist_id: LOGGED_IN_ARTIST_ID };
+            await patchArtwork(payload);
+            setPriceInput(rounded.toFixed(2));
+            console.log(`Set secret price for artwork ${artwork.id}:`, payload);
+            alert("Price updated to " + rounded.toFixed(2));
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to set price', err);
+            alert(`Failed to set price for artwork ${artwork?.id ?? id}: ${err.message || 'unknown error'}`);
+        }
     };
 
     const handleUploadMoreImages = () => {
         console.warn('handleUploadMoreImages() not implemented');
-        alert('Upload more images feature not implemented yet.');
+        alert(`Upload more images feature not implemented yet for artwork ${artwork?.id ?? id}.`);
+    };
+
+    const handleToggleAvailability = async () => {
+        const current = artwork?.status ?? 'not available';
+        const newStatus = current === 'available' ? 'not available' : 'available';
+
+        try {
+            await patchArtwork({ status: newStatus, artist_id: LOGGED_IN_ARTIST_ID });
+            // patchArtwork merges the returned data into state, but ensure UI reflects it
+            setArtwork(prev => ({ ...prev, status: newStatus }));
+            alert(`Status updated to "${newStatus}" for artwork ${artwork?.id ?? id}.`);
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to update status', err);
+            alert(`Failed to update status for artwork ${artwork?.id ?? id}: ${err.message || 'unknown error'}`);
+        }
     };
 
     return (
@@ -220,6 +304,24 @@ const EditArtwork = () => {
 
                     <Typography variant="caption" sx={{display: 'block', mt: 1, color: '#666'}}>
                         Current stored price: {typeof artwork.price !== 'undefined' ? Number(artwork.price).toFixed(2) : 'None (will default to ' + DEFAULT_SECRET_PRICE.toFixed(2) + ')'}
+                    </Typography>
+                </Box>
+
+                <Box sx={{mt: 2, display: 'flex', alignItems: 'center', gap: 1}}>
+                    <Typography variant="h6" component="h3" sx={{fontWeight: 600}}>
+                        Availability
+                    </Typography>
+
+                    <Button
+                        variant="contained"
+                        color={artwork?.status === 'available' ? 'success' : 'secondary'}
+                        onClick={handleToggleAvailability}
+                    >
+                        {artwork?.status === 'available' ? 'Set not available' : 'Set available'}
+                    </Button>
+
+                    <Typography variant="body2" sx={{ml: 1, color: '#666'}}>
+                        Current: {artwork?.status ?? 'not available'}
                     </Typography>
                 </Box>
 

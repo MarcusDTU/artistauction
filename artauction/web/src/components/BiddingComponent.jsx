@@ -1,118 +1,174 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
 const containerStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.5rem',
-  maxWidth: 320,
-  padding: '0.75rem',
-  border: '1px solid #e0e0e0',
-  borderRadius: 6,
-  background: '#fff',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+    maxWidth: 320,
+    padding: '0.75rem',
+    border: '1px solid #e0e0e0',
+    borderRadius: 6,
+    background: '#fff',
 };
 
 const bidStyle = {
-  fontSize: '1.5rem',
-  fontWeight: 600,
-  margin: 0,
+    fontSize: '0.95rem',
+    color: '#333',
+    margin: 0,
 };
 
 const inputRow = {
-  display: 'flex',
-  gap: '0.5rem',
-  alignItems: 'center',
+    display: 'flex',
+    gap: '.5rem',
+    alignItems: 'center',
 };
 
 const inputStyle = {
-  flex: 1,
-  padding: '0.5rem',
-  borderRadius: 4,
-  border: '1px solid #ccc',
+    flex: 1,
+    padding: '.5rem',
+    borderRadius: 4,
+    border: '1px solid #ccc',
 };
 
 const buttonStyle = {
-  padding: '0.5rem 0.75rem',
-  borderRadius: 4,
-  border: 'none',
-  background: '#007bff',
-  color: '#fff',
-  cursor: 'pointer',
+    padding: '.5rem .75rem',
+    borderRadius: 4,
+    border: 'none',
+    background: '#007bff',
+    color: '#fff',
+    cursor: 'pointer',
 };
 
 const errorStyle = {
-  color: '#b00020',
-  fontSize: '0.875rem',
-  margin: 0,
+    color: '#b00020',
+    fontSize: '.9rem',
 };
 
-const BiddingComponent = ({ initialBid = 0, onBidUpdate }) => {
-  const [currentBid, setCurrentBid] = useState(Number(initialBid) || 0);
-  const [input, setInput] = useState('');
-  const [error, setError] = useState(null);
+const twoDecimalRegex = /^\d*(?:\.\d{0,2})?$/;
 
-  const parsePositiveNumber = (val) => {
-    if (val === '' || val === null) return null;
-    const n = Number(val);
-    if (Number.isFinite(n) && n > 0) return n;
-    return null;
-  };
+const formatToTwo = (v) => {
+    if (v == null || v === '') return '0.00';
+    const n = Number(v);
+    if (!Number.isFinite(n)) return '0.00';
+    return n.toFixed(2);
+};
 
-  const handleChange = (e) => {
-    setInput(e.target.value);
-    setError(null);
-  };
+const BiddingComponent = ({ initialBid = 0, onBidUpdate, sold = false }) => {
+    const [highest, setHighest] = useState(Number(initialBid) || 0);
+    const [input, setInput] = useState('');
+    const [error, setError] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
 
-  const handleIncrement = () => {
-    const value = parsePositiveNumber(input);
-    if (value === null) {
-      setError('Enter a positive number');
-      return;
-    }
-    const next = +(currentBid + value).toFixed(2);
-    setCurrentBid(next);
-    setInput('');
-    setError(null);
-    if (typeof onBidUpdate === 'function') onBidUpdate(next);
-  };
+    useEffect(() => {
+        setHighest(Number(initialBid) || 0);
+        setError(null);
+    }, [initialBid]);
 
-  const isDisabled = parsePositiveNumber(input) === null;
+    // clear input/error when artwork becomes sold
+    useEffect(() => {
+        if (sold) {
+            setInput('');
+            setError(null);
+        }
+    }, [sold]);
 
-  return (
-    <div style={containerStyle}>
-      <div>
-        <p style={bidStyle}>Current bid: ${currentBid.toFixed(2)}</p>
-      </div>
+    const handleChange = (e) => {
+        if (sold) return;
+        const v = e.target.value;
+        if (v.startsWith('-')) {
+            setInput(v);
+            setError('Bid must be 0 or greater');
+            return;
+        }
+        if (v === '' || twoDecimalRegex.test(v)) {
+            setInput(v);
+            setError(null);
+        } else {
+            setError('Enter a number with up to two decimal places');
+        }
+    };
 
-      <div style={inputRow}>
-        <input
-          type="number"
-          min="0.01"
-          step="0.01"
-          aria-label="Increment amount"
-          placeholder="Enter positive amount"
-          value={input}
-          onChange={handleChange}
-          style={inputStyle}
-        />
-        <button
-          type="button"
-          onClick={handleIncrement}
-          disabled={isDisabled}
-          style={{ ...buttonStyle, opacity: isDisabled ? 0.6 : 1, cursor: isDisabled ? 'not-allowed' : 'pointer' }}
-        >
-          Add
-        </button>
-      </div>
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (sold) {
+            setError('Artwork has been sold');
+            return;
+        }
+        const str = input === '' ? '0' : input;
+        const parsed = Number(str);
+        if (!Number.isFinite(parsed)) {
+            setError('Invalid number');
+            return;
+        }
+        if (parsed < 0) {
+            setError('Bid must be 0 or greater');
+            return;
+        }
+        const rounded = Number(parsed.toFixed(2));
 
-      {error && <p style={errorStyle}>{error}</p>}
-    </div>
-  );
+        if (rounded <= highest) {
+            setError(`Bid must be higher than the current bid of ${formatToTwo(highest)}`);
+            return;
+        }
+
+        setSubmitting(true);
+        setError(null);
+
+        try {
+            const result = await Promise.resolve(onBidUpdate?.(rounded));
+            if (!result) {
+                setHighest(rounded);
+                setInput('');
+            } else if (result.success === false) {
+                setError(result.message ?? 'Bid was rejected');
+            } else {
+                setHighest(rounded);
+                setInput('');
+            }
+        } catch (err) {
+            setError('Failed to submit bid');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div style={containerStyle}>
+            <div style={bidStyle}>
+                Highest bid: <strong>{formatToTwo(highest)}</strong>
+            </div>
+
+            <form onSubmit={handleSubmit} style={inputRow}>
+                <input
+                    type="text"
+                    inputMode="decimal"
+                    value={input}
+                    onChange={handleChange}
+                    placeholder={sold ? 'Artwork sold' : 'Enter your bid'}
+                    aria-label="bid amount"
+                    style={inputStyle}
+                    disabled={sold}
+                    readOnly={sold}
+                />
+                <button type="submit" disabled={submitting || sold} style={buttonStyle}>
+                    {sold ? 'Sold' : (submitting ? '...' : 'Bid')}
+                </button>
+            </form>
+
+            {error && <div style={errorStyle}>{error}</div>}
+            {sold && <div style={{ color: '#2e7d32', fontSize: '.95rem' }}><strong>Sold — bidding closed</strong></div>}
+            <div style={{ fontSize: '.85rem', color: '#666' }}>
+                Tip: bid must be strictly greater than the highest bid and have at most two decimals.
+            </div>
+        </div>
+    );
 };
 
 BiddingComponent.propTypes = {
-  initialBid: PropTypes.number,
-  onBidUpdate: PropTypes.func,
+    initialBid: PropTypes.number,
+    onBidUpdate: PropTypes.func,
+    sold: PropTypes.bool,
 };
 
 export default BiddingComponent;

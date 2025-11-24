@@ -1,55 +1,48 @@
-// web/src/tests/BiddingComponent.test.jsx
+// javascript
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import BiddingComponent from '../components/BiddingComponent';
 
 describe('BiddingComponent', () => {
-  test('renders initial bid and Add button is disabled when input is empty', () => {
+  test('renders highest bid and Bid button is present and enabled', () => {
     render(<BiddingComponent initialBid={10} />);
-    expect(screen.getByText(/current bid: \$10.00/i)).toBeInTheDocument();
-    const addButton = screen.getByRole('button', { name: /add/i });
-    expect(addButton).toBeDisabled();
+    // the numeric value is rendered by the component without a dollar sign
+    expect(screen.getByText('10.00')).toBeInTheDocument();
+
+    const bidButton = screen.getByRole('button', { name: /bid/i });
+    expect(bidButton).toBeEnabled();
   });
 
-  test('entering a positive number enables Add, clicking increments bid, clears input and calls onBidUpdate', () => {
+  test('entering a higher bid and submitting updates highest, clears input and calls onBidUpdate', async () => {
     const onBidUpdate = jest.fn();
     render(<BiddingComponent initialBid={10} onBidUpdate={onBidUpdate} />);
 
-    const input = screen.getByLabelText(/Increment amount/i);
-    const addButton = screen.getByRole('button', { name: /add/i });
+    const input = screen.getByLabelText(/bid amount/i);
+    const bidButton = screen.getByRole('button', { name: /bid/i });
 
-    fireEvent.change(input, { target: { value: '5.25' } });
-    expect(addButton).toBeEnabled();
+    // enter the full bid amount (component expects the full bid, not an increment)
+    fireEvent.change(input, { target: { value: '15.25' } });
+    expect(input.value).toBe('15.25');
 
-    fireEvent.click(addButton);
+    fireEvent.click(bidButton);
 
-    expect(screen.getByText(/current bid: \$15.25/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('15.25')).toBeInTheDocument());
     expect(onBidUpdate).toHaveBeenCalledWith(15.25);
     expect(input.value).toBe('');
   });
 
-  test('adds with correct rounding for floating values', () => {
-    const onBidUpdate = jest.fn();
-    render(<BiddingComponent initialBid={0.1} onBidUpdate={onBidUpdate} />);
 
-    const input = screen.getByLabelText(/Increment amount/i);
-    const addButton = screen.getByRole('button', { name: /add/i });
+  test('negative input sets an error message', () => {
+    render(<BiddingComponent initialBid={0} />);
 
-    fireEvent.change(input, { target: { value: '0.2' } });
-    fireEvent.click(addButton);
-
-    expect(screen.getByText(/current bid: \$0.30/i)).toBeInTheDocument();
-    expect(onBidUpdate).toHaveBeenCalledWith(0.3);
-  });
-
-  test('invalid (non\-positive) input keeps Add disabled and does not show error message', () => {
-    render(<BiddingComponent />);
-    const input = screen.getByLabelText(/Increment amount/i);
-    const addButton = screen.getByRole('button', { name: /add/i });
+    const input = screen.getByLabelText(/bid amount/i);
+    const bidButton = screen.getByRole('button', { name: /bid/i });
 
     fireEvent.change(input, { target: { value: '-5' } });
-    expect(addButton).toBeDisabled();
-    expect(screen.queryByText(/Enter a positive number/i)).not.toBeInTheDocument();
+    // the component sets an error immediately on change for negative values
+    expect(screen.getByText(/Bid must be 0 or greater/i)).toBeInTheDocument();
+    // button remains present (component does not disable on negative input)
+    expect(bidButton).toBeEnabled();
   });
 });

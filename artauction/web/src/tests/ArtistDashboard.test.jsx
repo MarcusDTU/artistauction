@@ -1,3 +1,6 @@
+// javascript
+// File: `web/src/tests/ArtistDashboard.test.jsx`
+
 jest.mock('react-router-dom', () => {
   const actual = jest.requireActual('react-router-dom');
   return {
@@ -30,34 +33,51 @@ describe('ArtistDashboard', () => {
 
     const renderWithRouter = (ui) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
+    // preserve any existing global.fetch and restore after tests
+    const originalFetch = global.fetch;
+
     beforeEach(() => {
       // reset the mocked navigate before each test
       const rr = require('react-router-dom');
       rr.useNavigate.mockReset();
+
+      // mock fetch to return the SAMPLE_ARTWORKS for the component
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => SAMPLE_ARTWORKS
+      });
     });
 
-    test('renders heading and a sample artwork title', () => {
+    afterEach(() => {
+      // restore fetch to original (if any) between tests
+      global.fetch = originalFetch;
+      jest.resetAllMocks();
+    });
+
+    test('renders heading and a sample artwork title', async () => {
         renderWithRouter(<ArtistDashboard />);
         expect(screen.getByText('Your Artworks')).toBeInTheDocument();
-        // ensure at least the first sample artwork title is shown
-        expect(screen.getByText(SAMPLE_ARTWORKS[0].title || SAMPLE_ARTWORKS[0].name)).toBeInTheDocument();
+        // wait for the async fetch and rendering of artwork title
+        const title = SAMPLE_ARTWORKS[0].title || SAMPLE_ARTWORKS[0].name;
+        expect(await screen.findByText(title)).toBeInTheDocument();
     });
 
-    test('renders status for each artwork', () => {
+    test('renders status for each artwork', async () => {
         renderWithRouter(<ArtistDashboard />);
-        const publicItems = screen.getAllByText(/public/i);
-        const privateItems = screen.getAllByText(/private/i);
+        // wait for statuses to appear
+        const publicItems = await screen.findAllByText(/public/i);
+        const privateItems = await screen.findAllByText(/private/i);
         // number of status items should equal number of artworks
         expect(publicItems.length + privateItems.length).toBe(SAMPLE_ARTWORKS.length);
     });
 
-    test('Edit button calls navigate with correct path and state', () => {
+    test('Edit button calls navigate with correct path and state', async () => {
         const rr = require('react-router-dom');
         const navigateMock = jest.fn();
         rr.useNavigate.mockReturnValue(navigateMock);
 
         renderWithRouter(<ArtistDashboard />);
-        const editButtons = screen.getAllByText('Edit');
+        const editButtons = await screen.findAllByText('Edit');
         expect(editButtons.length).toBeGreaterThan(0);
 
         // click the first edit button
@@ -68,7 +88,7 @@ describe('ArtistDashboard', () => {
           `/edit-artwork/${firstId}`,
           expect.objectContaining({
             state: expect.objectContaining({
-              artwork: expect.objectContaining({ id: firstId })
+              artwork: expect.objectContaining({ id: String(firstId) })
             })
           })
         );

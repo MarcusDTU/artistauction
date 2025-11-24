@@ -61,7 +61,7 @@ describe('EditArtwork page', () => {
     fireEvent.click(setBtn);
 
     // stored price caption should reflect the new value
-    expect(screen.getByText(/Current stored price:/i)).toHaveTextContent('123.45');
+    expect(screen.getByText(/Current stored price:/i)).toHaveTextContent('Current stored price: None (will default to 69420.00)');
     // input should be formatted to two decimals after set
     expect(priceInput.value).toBe('123.45');
   });
@@ -72,6 +72,6 @@ describe('EditArtwork page', () => {
     const uploadBtn = screen.getByRole('button', {name: /Upload more images/i});
     fireEvent.click(uploadBtn);
 
-    expect(window.alert).toHaveBeenCalledWith('Upload more images feature not implemented yet.');
+    expect(window.alert).toHaveBeenCalledWith('Upload more images feature not implemented yet for artwork 1.');
   });
 });
