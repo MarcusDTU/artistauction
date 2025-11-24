@@ -20,9 +20,42 @@ const normalizeArtist = (raw, fallbackId) => {
   };
 };
 
+
+const normalizeAvailability = (a = {}) => {
+    const statusRaw = a.status ?? a.availability ?? '';
+    const status = String(statusRaw).trim().toLowerCase();
+
+    const showStatuses = new Set(['available', 'sold']);
+    const hideStatuses = new Set(['not available', 'private', 'unavailable', 'closed']);
+
+    // Prefer explicit booleans if present — respect both when provided,
+    // otherwise derive the missing boolean from the one that exists.
+    if (typeof a.available === 'boolean' || typeof a.sold === 'boolean') {
+        const available = typeof a.available === 'boolean' ? a.available : !Boolean(a.sold);
+        const sold = typeof a.sold === 'boolean' ? a.sold : !Boolean(a.available);
+        return { available, sold };
+    }
+
+    if (status) {
+        if (showStatuses.has(status)) {
+            return { available: true, sold: status === 'sold' };
+        }
+        if (hideStatuses.has(status)) {
+            return { available: false, sold: false };
+        }
+        // unknown status -> show by default
+        return { available: true, sold: false };
+    }
+
+    // fallback
+    return { available: true, sold: false };
+};
+
 const isArtworkAvailable = (a) => {
-  const availRaw = a.status ?? a.availability ?? (typeof a.available === 'boolean' ? (a.available ? 'available' : 'not available') : undefined);
-  return String(availRaw ?? '').toLowerCase() === 'available';
+    if (!a) return false;
+    const { available, sold } = normalizeAvailability(a);
+    // per requirement: show when status is 'available' or 'sold', hide when 'not available' or 'private'
+    return Boolean(available || sold);
 };
 
 const ArtistPortfolio = () => {
@@ -105,16 +138,21 @@ const ArtistPortfolio = () => {
 
                     // Normalize artwork fields and filter by availability == 'available'
                     normalized.artworks = sourceArtworks
-                      .map(a => ({
-                        ...a,
-                        id: a.id ?? a.artwork_id ?? a._id ?? a.slug ?? a.title,
-                        image: a.image ?? a.image_url ?? a.url ?? a.thumbnail ?? PLACEHOLDER_IMAGE,
-                        title: a.title ?? a.name ?? 'Untitled',
-                        artistName: normalized.name,
-                        artist: { id: normalized.id, name: normalized.name },
-                        // keep existing status/availability fields for downstream UI
-                      }))
-                      .filter(isArtworkAvailable);
+                        .map(a => {
+                            const { available, sold } = normalizeAvailability(a);
+                            return {
+                                ...a,
+                                id: a.id ?? a.artwork_id ?? a._id ?? a.slug ?? a.title,
+                                image: a.image ?? a.image_url ?? a.url ?? a.thumbnail ?? PLACEHOLDER_IMAGE,
+                                title: a.title ?? a.name ?? 'Untitled',
+                                artistName: normalized.name,
+                                artist: { id: normalized.id, name: normalized.name },
+                                available,
+                                sold,
+                                status: a.status ?? a.availability ?? ''
+                            };
+                        })
+                        .filter(isArtworkAvailable);
 
                     setArtist(normalized);
                 } catch (err) {
