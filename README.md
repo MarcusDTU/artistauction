@@ -46,3 +46,4 @@ In `artauction/web/package.json`:
   - Import the client from `artauction/web/src/lib/supabaseClient.js` and call Supabase APIs. Example:
     - `import { supabase } from '../lib/supabaseClient';`
     - `const { data, error } = await supabase.from('artworks').select('*');`
+## Test
