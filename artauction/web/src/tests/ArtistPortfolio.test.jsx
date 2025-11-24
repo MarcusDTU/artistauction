@@ -1,4 +1,5 @@
-// File: web/src/pages/__tests__/ArtistPortfolio.test.jsx
+// javascript
+// File: `web/src/pages/__tests__/ArtistPortfolio.test.jsx`
 import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -61,28 +62,38 @@ describe('ArtistPortfolio', () => {
   });
 
   test('fetches artist when no initial state and renders result', async () => {
-    const artist = {
+    const fetchedArtist = {
       name: 'Fetched Artist',
-      bio: 'Fetched bio',
-      artworks: [{id: 'b1', title: 'Fetched Art'}]
+      bio: 'Fetched bio'
     };
+    const fetchedArtworks = [{id: 'b1', title: 'Fetched Art', status: 'available'}];
 
     useParamsMock.mockReturnValue({artistId: '42'});
     useLocationMock.mockReturnValue({state: null});
     const navigateMock = jest.fn();
     useNavigateMock.mockReturnValue(navigateMock);
 
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => artist
-    });
+    const base = process.env.REACT_APP_API_BASE || 'http://localhost:8081';
+
+    global.fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: { get: () => 'application/json' },
+        json: async () => fetchedArtist
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: { get: () => 'application/json' },
+        json: async () => fetchedArtworks
+      });
 
     render(<ArtistPortfolio />);
 
     expect(screen.getByText(/Loading artist/)).toBeInTheDocument();
 
     await waitFor(() => expect(screen.getByText(/Fetched Artist/)).toBeInTheDocument());
-    expect(global.fetch).toHaveBeenCalledWith('/api/artists/42');
+    expect(global.fetch).toHaveBeenCalledWith(`${base}/artist/42`);
+    expect(global.fetch).toHaveBeenCalledWith(`${base}/artwork/artist/42`);
     expect(screen.getByText('Fetched Art')).toBeInTheDocument();
   });
 
@@ -92,17 +103,33 @@ describe('ArtistPortfolio', () => {
     const navigateMock = jest.fn();
     useNavigateMock.mockReturnValue(navigateMock);
 
-    global.fetch.mockResolvedValueOnce({ok: false});
+    const base = process.env.REACT_APP_API_BASE || 'http://localhost:8081';
+
+    global.fetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Server Error',
+        text: async () => 'internal error'
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: { get: () => 'application/json' },
+        json: async () => []
+      });
 
     render(<ArtistPortfolio />);
 
     await waitFor(() => expect(screen.getByText(/Error:/)).toBeInTheDocument());
+    // ensure fetch attempted the expected endpoints
+    expect(global.fetch).toHaveBeenCalledWith(`${base}/artist/99`);
+    expect(global.fetch).toHaveBeenCalledWith(`${base}/artwork/artist/99`);
   });
 
   test('navigates to artwork page with state when artwork selected', async () => {
     const artist = {
       name: 'Nav Artist',
-      bio: '',
+      bio: 'Has bio',
       artworks: [{id: 'nav-1', title: 'Nav Art'}]
     };
 

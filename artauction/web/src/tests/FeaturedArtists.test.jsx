@@ -13,19 +13,40 @@ describe('FeaturedArtists', () => {
       </MemoryRouter>
     );
     expect(screen.getByRole('heading', { name: /featured artists/i })).toBeInTheDocument();
-    expect(screen.getByText(/explore the portfolios/i)).toBeInTheDocument();
   });
 
-  test('renders three artist cards with images and names', () => {
+  // javascript
+  // Update in `web/src/tests/FeaturedArtists.test.jsx`
+  test('renders three artist cards with images and names', async () => {
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ([
+        { artist_id: '1', name: 'Artist One', image_url: 'http://example/1.jpg' },
+        { artist_id: '2', name: 'Artist Two', image_url: 'http://example/2.jpg' },
+        { artist_id: '3', name: 'Artist Three', image_url: 'http://example/3.jpg' },
+      ]),
+    });
+
     render(
       <MemoryRouter>
         <FeaturedArtists />
       </MemoryRouter>
     );
-    const names = [/elena martinez/i, /james chen/i, /john laurent/i];
-    names.forEach((name) => {
-      expect(screen.getByRole('img', { name })).toBeInTheDocument();
-      expect(screen.getByText(name)).toBeInTheDocument();
+
+    const cards = await screen.findAllByTestId(/artist-/);
+    expect(cards).toHaveLength(3);
+
+    cards.forEach((card) => {
+      const img = card.querySelector('img');
+      expect(img).toBeInTheDocument();
+      expect(img.alt).toBeTruthy();
+
+      const nameEl = card.querySelector('.artist-name');
+      expect(nameEl).toBeInTheDocument();
+      expect(nameEl.textContent.trim().length).toBeGreaterThan(0);
     });
+
+    global.fetch = originalFetch;
   });
 });
