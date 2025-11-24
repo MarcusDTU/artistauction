@@ -9,9 +9,9 @@ const gridStyle = {
     gridTemplateColumns: 'repeat(auto-fill, 220px)',
     gridAutoRows: '320px',
     gap: '0.75rem',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'start',
-    padding: '0.5rem',
+    padding: '0.5rem 0',
 };
 
 const linkStyle = {

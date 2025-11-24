@@ -255,7 +255,7 @@ const ArtworkPage = () => {
         }
     }
 
-    const initialBid = (artwork?.currentBid ?? artwork?.startingBid ?? 0);
+    const initialBid = artwork?.currentBid ?? artwork?.startingBid ?? 0;
 
     return (
         <div style={{ padding: '1rem' }}>
@@ -263,28 +263,56 @@ const ArtworkPage = () => {
                 type="button"
                 className="back-link"
                 onClick={handleBack}
-                style={{ background: 'none', border: 'none', padding: 0, margin: 0, cursor: 'pointer', color: 'inherit', font: 'inherit' }}
+                style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    margin: 0,
+                    cursor: 'pointer',
+                    color: 'inherit',
+                    font: 'inherit',
+                }}
             >
                 ← Back to Artist
             </button>
 
-            <DisplayArtwork />
 
-            <div style={{ marginTop: '1rem' , marginLeft: '21.5rem'}}>
-                <BiddingComponent initialBid={initialBid} onBidUpdate={handleBidUpdate} sold={!!artwork?.sold} />
-                <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#444' }}>
-                    {latestBids.length === 0 ? (
-                        <div>No auctions / bids found</div>
-                    ) : (
-                        latestBids.map(info => (
-                            <div key={String(info.auction_id)}>
-                                Auction: {info.auction_id} — Latest bid id: {info.bid_id ?? 'none'} — value: {info.value ?? 'n/a'}
-                            </div>
-                        ))
-                    )}
+            <div
+                style={{
+                padding: '1rem',
+                maxWidth: '900px',
+                margin: '0 auto',
+            }}
+            >
+                <DisplayArtwork />
+
+                <div style={{ marginTop: '1rem' }}>
+                    <BiddingComponent
+                        initialBid={initialBid}
+                        onBidUpdate={handleBidUpdate}
+                        sold={!!artwork?.sold}
+                    />
+
+                    <div
+                        style={{
+                            marginTop: '0.5rem',
+                            fontSize: '0.9rem',
+                            color: '#444',
+                        }}
+                    >
+                        {latestBids.length === 0 ? (
+                            <div>No auctions / bids found</div>
+                        ) : (
+                            latestBids.map((info) => (
+                                <div key={String(info.auction_id)}>
+                                    Auction: {info.auction_id} — Latest bid id:{' '}
+                                    {info.bid_id ?? 'none'} — value: {info.value ?? 'n/a'}
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
             </div>
-
         </div>
     );
 }

@@ -157,7 +157,7 @@ const ArtistPortfolio = () => {
         <h1 style={{margin: 0, fontSize: '1.75rem'}}>{artist.name}</h1>
       </div>
 
-      <main style={{padding: '1rem'}}>
+      <main style={{padding: '1rem 2rem'}}>
         {notice && (
           <div style={{
             marginBottom: '1rem',
