@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/artistauction/static/css/main.656f57d3.css",
-    "main.js": "/artistauction/static/js/main.dc803443.js",
+    "main.js": "/artistauction/static/js/main.db9dda59.js",
     "static/js/453.b2c65378.chunk.js": "/artistauction/static/js/453.b2c65378.chunk.js",
     "static/media/logo.png": "/artistauction/static/media/logo.04deb905e494993e795e.png",
     "static/media/roboto-latin-700-normal.woff2": "/artistauction/static/media/roboto-latin-700-normal.3d32572dd5951c418e5b.woff2",
@@ -78,11 +78,11 @@
     "static/media/roboto-greek-ext-700-normal.woff": "/artistauction/static/media/roboto-greek-ext-700-normal.f54f1cebdcefe4af6446.woff",
     "index.html": "/artistauction/index.html",
     "main.656f57d3.css.map": "/artistauction/static/css/main.656f57d3.css.map",
-    "main.dc803443.js.map": "/artistauction/static/js/main.dc803443.js.map",
+    "main.db9dda59.js.map": "/artistauction/static/js/main.db9dda59.js.map",
     "453.b2c65378.chunk.js.map": "/artistauction/static/js/453.b2c65378.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.656f57d3.css",
-    "static/js/main.dc803443.js"
+    "static/js/main.db9dda59.js"
   ]
 }
