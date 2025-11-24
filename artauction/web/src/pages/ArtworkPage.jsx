@@ -8,13 +8,47 @@ const AUCTION_URL = process.env.REACT_APP_AUCTION_URL ?? `${API_HOST}/auction`;
 const BID_URL = process.env.REACT_APP_BID_URL ?? `${API_HOST}/bid`;
 const ARTWORK_URL = process.env.REACT_APP_ARTWORK_URL ?? `${API_HOST}/artwork`;
 
-const normalizeArtwork = (raw = {}) => ({
-  ...raw,
-  id: raw.id ?? raw.artwork_id ?? raw.artworkNumber ?? raw.slug ?? null,
-  startingBid: raw.startingBid ?? raw.starting_bid ?? null,
-  currentBid: raw.currentBid ?? raw.current_bid ?? null,
-  sold: raw.sold ?? false,
-});
+const normalizeArtwork = (raw = {}) => {
+    const statusRaw = raw.status ?? raw.availability ?? '';
+    const status = String(statusRaw).trim().toLowerCase();
+
+    const availableStatuses = new Set(['available', 'active', 'open']);
+    const soldStatuses = new Set(['sold', 'not available', 'unavailable', 'closed']);
+
+    // prefer explicit boolean `raw.sold` when present
+    let sold;
+    let available;
+    if (typeof raw.sold === 'boolean') {
+        sold = raw.sold;
+        available = !raw.sold;
+    } else if (status) {
+        if (availableStatuses.has(status)) {
+            available = true;
+            sold = false;
+        } else if (soldStatuses.has(status)) {
+            available = false;
+            sold = true;
+        } else {
+            // unknown status string -> fallback to not-sold by default
+            available = true;
+            sold = false;
+        }
+    } else {
+        // no status and no explicit sold -> fallback
+        sold = false;
+        available = true;
+    }
+
+    return {
+        ...raw,
+        id: raw.id ?? raw.artwork_id ?? raw.artworkNumber ?? raw.slug ?? null,
+        startingBid: raw.startingBid ?? raw.starting_bid ?? null,
+        currentBid: raw.currentBid ?? raw.current_price ?? raw.current_bid ?? null,
+        endPrice: raw.endPrice ?? raw.end_price ?? null,
+        available,
+        sold,
+    };
+};
 
 const ArtworkPage = () => {
     const navigate = useNavigate();
@@ -162,27 +196,6 @@ const ArtworkPage = () => {
             const created = await res.json().catch(() => ({}));
             const createdBidId = created?.id ?? created?.bid_id ?? null;
 
-            const patchRes = await fetch(`${ARTWORK_URL}/${encodeURIComponent(artId)}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({ current_price: newBid }),
-            });
-
-            if (!patchRes.ok) {
-                if (createdBidId) {
-                    try {
-                        await fetch(`${BID_URL}/${encodeURIComponent(createdBidId)}`, { method: 'DELETE' });
-                    } catch (deleteErr) {
-                        // eslint-disable-next-line no-console
-                        console.warn('Failed to delete created bid after patch failure', deleteErr);
-                    }
-                }
-
-                const body = await patchRes.json().catch(() => ({}));
-                const msg = body?.error?.message ?? `Server returned ${patchRes.status}`;
-                return { success: false, message: `Failed to update artwork current_price: ${msg}` };
-            }
-
             let fetchedArt = null;
             try {
                 const artRes = await fetch(`${ARTWORK_URL}/${encodeURIComponent(artId)}`);
@@ -238,6 +251,52 @@ const ArtworkPage = () => {
             } else {
                 // normal success: update current bid and ensure sold is false
                 setArtwork(prev => (prev ? { ...prev, currentBid: newBid, sold: false } : prev));
+            }
+
+            const soldStatus = shouldDeactivateAuction ? { sold: true } : { sold: false };
+
+            if(soldStatus?.sold){
+                const patchRes = await fetch(`${ARTWORK_URL}/${encodeURIComponent(artId)}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ current_price: newBid, status: 'sold' }),
+                });
+
+                if (!patchRes.ok) {
+                    if (createdBidId) {
+                        try {
+                            await fetch(`${BID_URL}/${encodeURIComponent(createdBidId)}`, { method: 'DELETE' });
+                        } catch (deleteErr) {
+                            // eslint-disable-next-line no-console
+                            console.warn('Failed to delete created bid after patch failure', deleteErr);
+                        }
+                    }
+
+                    const body = await patchRes.json().catch(() => ({}));
+                    const msg = body?.error?.message ?? `Server returned ${patchRes.status}`;
+                    return { success: false, message: `Failed to update artwork current_price: ${msg}` };
+                }
+            } else {
+                const patchRes = await fetch(`${ARTWORK_URL}/${encodeURIComponent(artId)}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ current_price: newBid }),
+                });
+
+                if (!patchRes.ok) {
+                    if (createdBidId) {
+                        try {
+                            await fetch(`${BID_URL}/${encodeURIComponent(createdBidId)}`, { method: 'DELETE' });
+                        } catch (deleteErr) {
+                            // eslint-disable-next-line no-console
+                            console.warn('Failed to delete created bid after patch failure', deleteErr);
+                        }
+                    }
+
+                    const body = await patchRes.json().catch(() => ({}));
+                    const msg = body?.error?.message ?? `Server returned ${patchRes.status}`;
+                    return { success: false, message: `Failed to update artwork current_price: ${msg}` };
+                }
             }
 
             setLatestBids(prev => prev.map(info => {
