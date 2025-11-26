@@ -110,7 +110,10 @@ const Login = () => {
 
       // Success
       alert('Account created successfully! Please check your email to confirm your account before logging in.');
-      setTab(0); // Switch to login tab
+      // Clear form
+      e.target.reset();
+      // Switch to login tab after a short delay
+      setTimeout(() => setTab(0), 1000);
     } catch (err) {
       console.error("Signup Error:", err);
       setAuthError(err.message || 'Failed to create account');

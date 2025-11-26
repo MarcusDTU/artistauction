@@ -112,7 +112,7 @@ const EditArtwork = () => {
     };
     const handleSaveTitle = async () => {
         try {
-            const payload = { title, artist_id: LOGGED_IN_ARTIST_ID };
+            const payload = { title };
             await patchArtwork(payload);
             setIsEditingTitle(false);
             console.log(`Saved title for artwork ${artwork.id}:`, payload);
@@ -132,7 +132,7 @@ const EditArtwork = () => {
     };
     const handleSaveDescription = async () => {
         try {
-            const payload = { description, artist_id: LOGGED_IN_ARTIST_ID };
+            const payload = { description };
             await patchArtwork(payload);
             setIsEditingDescription(false);
             console.log(`Saved description for artwork ${artwork.id}:`, payload);
@@ -159,8 +159,8 @@ const EditArtwork = () => {
         }
         const rounded = Number(parsed.toFixed(2));
         try {
-            // send price and artist id; backend may expect price or end_price
-            const payload = { end_price: rounded, artist_id: LOGGED_IN_ARTIST_ID };
+            // send price only - do not change artist_id
+            const payload = { end_price: rounded };
             await patchArtwork(payload);
             setPriceInput(rounded.toFixed(2));
             console.log(`Set secret price for artwork ${artwork.id}:`, payload);
@@ -182,7 +182,7 @@ const EditArtwork = () => {
         const newStatus = current === 'available' ? 'not available' : 'available';
 
         try {
-            await patchArtwork({ status: newStatus, artist_id: LOGGED_IN_ARTIST_ID });
+            await patchArtwork({ status: newStatus });
             // patchArtwork merges the returned data into state, but ensure UI reflects it
             setArtwork(prev => ({ ...prev, status: newStatus }));
             alert(`Status updated to "${newStatus}" for artwork ${artwork?.id ?? id}.`);

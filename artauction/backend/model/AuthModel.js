@@ -39,7 +39,7 @@ export const updatePassword = async (accessToken, refreshToken, newPassword) => 
 
 export const requestPasswordReset = async (email, redirectTo) => {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectTo
+        redirectTo: redirectTo || 'http://localhost:3000/#/reset'
     });
     return { data, error };
 }

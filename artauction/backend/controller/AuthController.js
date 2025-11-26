@@ -11,35 +11,35 @@ export const register = async (req, res) => {
     try {
         console.log("Registering user:", email, role); 
         // 1. Create Supabase Auth User
-        const { data: authData, error: authError } = await signUp(email, password, { full_name, role });
+        const { data: authData, error: authError } = await signUp(email, password, { 
+            full_name, 
+            role 
+        });
         console.log("Auth Data:", authData);    
         if (authError) {
-            return res.status(400).json({ error: authError.message });
+            let errorMessage = authError.message;
+            if (authError.code === 'email_address_invalid') {
+                errorMessage = 'Invalid email address. Please use a valid email domain.';
+            } else if (authError.code === 'signup_disabled') {
+                errorMessage = 'Account creation is currently disabled. Please contact support.';
+            }
+            return res.status(400).json({ error: errorMessage });
         }
 
         if (!authData.user) {
-            return res.status(400).json({ error: "User creation failed" });
+            return res.status(400).json({ 
+                error: "Account creation failed. This email may already be registered or invalid." 
+            });
         }
 
-        // 2. Create Profile in public.Profile table
-        // Note: We use the returned user ID from auth if needed, but our schema relies on email as unique key for now or just inserts.
-        // Actually, our Profile table has profile_id as identity. We should insert email, role, full_name.
-
-        const profilePayload = {
-            email: email,
-            full_name: full_name,
-            role: role,
-            // avatar_url: default?
-        };
-        console.log("Creating profile with payload:")  
-        try{
-        const { data: profileData, error: profileError } = await createProfile(profilePayload);
-        
-        return res.status(201).json({ user: authData.user, profile: profileData });
-        } catch(profileErr){
-            console.error("Profile creation error:", profileErr);
-            return res.status(500).json({ error: "Profile creation failed" });
-        }
+        // Return success - profile will be created when needed
+        const message = "Account created successfully! Please check your email to confirm your account before logging in.";
+            
+        return res.status(201).json({ 
+            message, 
+            user: authData.user,
+            needsEmailConfirmation: true
+        });
 
     } catch (err) {
         return res.status(500).json({ error: err.message });
@@ -57,14 +57,38 @@ export const login = async (req, res) => {
         const { data: authData, error: authError } = await signIn(email, password);
 
         if (authError) {
-            return res.status(401).json({ error: authError.message });
+            let errorMessage = authError.message;
+            if (authError.code === 'invalid_credentials') {
+                errorMessage = 'Invalid email or password. Please check your credentials.';
+            } else if (authError.code === 'email_not_confirmed') {
+                errorMessage = 'Please confirm your email address before logging in. Check your inbox for a confirmation link.';
+            }
+            return res.status(401).json({ error: errorMessage });
         }
 
         // Fetch Profile details (role, full_name)
-        const { data: profileData, error: profileError } = await getProfileByEmail(email);
+        let { data: profileData, error: profileError } = await getProfileByEmail(email);
 
         if (profileError) {
-            return res.status(404).json({ error: "Profile not found" });
+            // Profile doesn't exist yet - create it now that user is confirmed
+            console.log("Profile not found, creating for confirmed user:", email);
+            
+            const profilePayload = {
+                email: email,
+                full_name: authData.user.user_metadata?.full_name || '',
+                role: authData.user.user_metadata?.role || 'buyer'
+            };
+            
+            const { data: newProfileData, error: createError } = await createProfile(profilePayload);
+            
+            if (createError) {
+                console.error("Failed to create profile:", createError);
+                return res.status(500).json({ 
+                    error: "Failed to create user profile. Please contact support." 
+                });
+            }
+            
+            profileData = newProfileData;
         }
 
         return res.json({
