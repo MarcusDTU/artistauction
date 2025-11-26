@@ -4,13 +4,14 @@ const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
 function createMockSupabase() {
-  const noop = () => {};
+  const noop = () => { };
   const ok = (data = null) => ({ data, error: null });
   const auth = {
     async signInWithPassword() { return ok({ user: null, session: null }); },
     async signUp() { return ok({ user: { id: 'test-user' }, session: null }); },
     async signOut() { return ok(); },
     async getSession() { return ok({ session: null }); },
+    async setSession() { return ok({ session: null }); }, 
     onAuthStateChange() {
       return { data: { subscription: { unsubscribe: noop } } };
     },
@@ -33,6 +34,7 @@ if (process.env.NODE_ENV === 'test') {
   // Non-fatal warning to help local setup and avoid crashes in dev without env
   // eslint-disable-next-line no-console
   console.warn('Supabase env vars missing. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY.');
+  console.log('DEBUG: URL:', supabaseUrl, 'KEY:', supabaseAnonKey ? 'Set' : 'Unset');
   supabaseClient = createMockSupabase();
 }
 

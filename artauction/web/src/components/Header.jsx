@@ -4,34 +4,43 @@ import DashboardOutlined from '@mui/icons-material/DashboardOutlined';
 import PersonOutline from '@mui/icons-material/PersonOutline';
 import HomeOutlined from '@mui/icons-material/HomeOutlined';
 import logo from '../assets/logo.png';
-import {AppBar, Toolbar, Typography, Box} from '@mui/material';
+import { AppBar, Toolbar, Typography, Box } from '@mui/material';
 import '../styles/header.css';
-import { supabase } from '../lib/supabaseClient';
 
-const Header = ({onLogin}) => {
-    const [session, setSession] = useState(null);
+const Header = ({ onLogin }) => {
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+    const checkLoginStatus = () => {
+        const token = localStorage.getItem('access_token');
+        setIsLoggedIn(!!token);
+    };
 
     useEffect(() => {
-        let mounted = true;
-        supabase.auth.getSession().then(({ data }) => {
-            if (mounted) setSession(data.session ?? null);
-        });
-        const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-            setSession(s);
-        });
+        checkLoginStatus();
+
+        // Listen for custom event from Login page
+        const handleAuthChange = () => checkLoginStatus();
+        window.addEventListener('auth-change', handleAuthChange);
+
+        // Listen for storage events (cross-tab sync)
+        window.addEventListener('storage', handleAuthChange);
+
         return () => {
-            mounted = false;
-            sub.subscription.unsubscribe();
+            window.removeEventListener('auth-change', handleAuthChange);
+            window.removeEventListener('storage', handleAuthChange);
         };
     }, []);
 
     const handleAuthClick = async () => {
-        if (session) {
-            await supabase.auth.signOut();
-            try {
-                localStorage.removeItem('role');
-                localStorage.removeItem('full_name');
-            } catch (_) {}
+        if (isLoggedIn) {
+            // Logout
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('role');
+            localStorage.removeItem('full_name');
+
+            setIsLoggedIn(false);
+            window.dispatchEvent(new Event('auth-change')); // Notify other components if needed
             window.location.hash = '#/home';
         } else if (typeof onLogin === 'function') {
             onLogin();
@@ -40,40 +49,40 @@ const Header = ({onLogin}) => {
         }
     };
 
-    const isLoggedIn = Boolean(session);
-
     return (
         <AppBar position="static" className="header-appbar">
             <Toolbar className="header-toolbar">
-                <img src={logo} alt="Art Auction Logo" className="header-logo"/>
+                <img src={logo} alt="Art Auction Logo" className="header-logo" />
                 <Box className="nav-actions">
                     <Box
                         component={Link}
                         to="/home"
                         aria-label="Go to Home"
                         className="nav-item nav-link"
-                        onClick={(e)=>{ e.stopPropagation(); }}
+                        onClick={(e) => { e.stopPropagation(); }}
                     >
-                        <HomeOutlined className="nav-icon"/>
+                        <HomeOutlined className="nav-icon" />
                         <Typography className="nav-text" variant="body1">Home</Typography>
                     </Box>
 
-                    <Box
-                        component={Link}
-                        to="/dashboard"
-                        aria-label="Go to Artist Dashboard"
-                        className="nav-item nav-link"
-                        onClick={(e)=>{ e.stopPropagation(); }}
-                    >
-                        <DashboardOutlined className="nav-icon"/>
-                        <Typography className="nav-text" variant="body1">My Artworks</Typography>
-                    </Box>
+                    {isLoggedIn && localStorage.getItem('role') === 'artist' && (
+                        <Box
+                            component={Link}
+                            to="/dashboard"
+                            aria-label="Go to Artist Dashboard"
+                            className="nav-item nav-link"
+                            onClick={(e) => { e.stopPropagation(); }}
+                        >
+                            <DashboardOutlined className="nav-icon" />
+                            <Typography className="nav-text" variant="body1">My Artworks</Typography>
+                        </Box>
+                    )}
 
                     <Box
                         className="nav-item login"
                         onClick={handleAuthClick}
                     >
-                        <PersonOutline className="nav-icon"/>
+                        <PersonOutline className="nav-icon" />
                         <Typography className="nav-text" variant="body1">{isLoggedIn ? 'Log out' : 'Log in'}</Typography>
                     </Box>
                 </Box>
