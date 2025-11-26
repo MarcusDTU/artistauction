@@ -3,7 +3,6 @@ import {useParams, useLocation, useNavigate} from 'react-router-dom';
 import {Box, Typography, IconButton, TextField, Button} from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 
-const LOGGED_IN_ARTIST_ID = 2;
 const API_HOST = process.env.REACT_APP_API_HOST ?? 'http://localhost:8081';
 const ARTWORK_URL = process.env.REACT_APP_ARTWORK_URL ?? `${API_HOST}/artwork/`;
 

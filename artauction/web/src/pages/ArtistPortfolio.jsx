@@ -62,10 +62,10 @@ const ArtistPortfolio = () => {
   const { artistId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const initialArtist = location.state?.artist || null;
+  const initialArtist = useRef(location.state?.artist || null);
 
-  const [artist, setArtist] = useState(initialArtist);
-  const [loading, setLoading] = useState(!initialArtist || !initialArtist.bio);
+  const [artist, setArtist] = useState(initialArtist.current);
+  const [loading, setLoading] = useState(!initialArtist.current || !initialArtist.current.bio);
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
   const timeoutRef = useRef(null);
@@ -73,8 +73,8 @@ const ArtistPortfolio = () => {
   useEffect(() => {
     let mounted = true;
 
-    const shouldFetchArtist = !artist || !artist.bio;
-    const shouldFetchArtworks = !artist || artist.artworks == null;
+    const shouldFetchArtist = !initialArtist.current || !initialArtist.current.bio;
+    const shouldFetchArtworks = !initialArtist.current || initialArtist.current.artworks == null;
 
     if ((shouldFetchArtist || shouldFetchArtworks) && artistId) {
       setLoading(true);
@@ -126,7 +126,7 @@ const ArtistPortfolio = () => {
 
           if (!mounted) return;
 
-          const mergedRaw = { ...(artist || {}), ...(fetchedArtist || {}) };
+          const mergedRaw = { ...(initialArtist.current || {}), ...(fetchedArtist || {}) };
           const normalized = normalizeArtist(mergedRaw, artistId);
 
           // Determine source artworks (prefer fetchedArtworks when available)
@@ -167,7 +167,7 @@ const ArtistPortfolio = () => {
     return () => {
       mounted = false;
     };
-  }, [artistId]); // Fixed dependency array
+  }, [artistId]); // Only depend on artistId to avoid infinite loops
 
   const handleSelectArtwork = (art) => {
     const id = art?.id || art?.slug || art?.title;
