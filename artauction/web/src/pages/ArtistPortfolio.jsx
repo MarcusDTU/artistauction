@@ -71,7 +71,6 @@ const ArtistPortfolio = () => {
   const timeoutRef = useRef(null);
 
   useEffect(() => {
-      if(!artist) return;
     let mounted = true;
 
     const shouldFetchArtist = !artist || !artist.bio;
@@ -168,7 +167,7 @@ const ArtistPortfolio = () => {
     return () => {
       mounted = false;
     };
-  }, [artistId]); // Fixed dependency array
+  }, [artistId, artist]); // Fixed dependency array
 
   const handleSelectArtwork = (art) => {
     const id = art?.id || art?.slug || art?.title;
