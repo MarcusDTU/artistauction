@@ -1,4 +1,4 @@
-import {supabase} from "./dbConfig.js";
+import { supabase } from "./dbConfig.js";
 import express from "express";
 import cors from "cors";
 import bidRoutes from "./routes/bidRoutes.js";
@@ -6,6 +6,7 @@ import ProfileRoutes from "./routes/ProfileRoutes.js";
 import ArtworkRoutes from "./routes/ArtworkRoutes.js";
 import ArtistRoutes from "./routes/ArtistRoute.js";
 import AuctionRoute from "./routes/AuctionRoute.js";
+import AuthRoute from "./routes/AuthRoute.js";
 
 
 const app = express();
@@ -16,11 +17,12 @@ app.use('/profiles', ProfileRoutes);
 app.use('/artwork', ArtworkRoutes);
 app.use('/artist', ArtistRoutes);
 app.use('/auction', AuctionRoute);
+app.use('/auth', AuthRoute);
 
 
 
 
-app.get('/',(req, res) => {
+app.get('/', (req, res) => {
     return res.json("Server is running");
 })
 

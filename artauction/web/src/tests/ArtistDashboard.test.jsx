@@ -41,10 +41,38 @@ describe('ArtistDashboard', () => {
       const rr = require('react-router-dom');
       rr.useNavigate.mockReset();
 
+      // Mock localStorage to simulate logged in user
+      const localStorageMock = {
+        getItem: jest.fn((key) => {
+          if (key === 'user_email') return 'testuser@example.com'; // Correct key name
+          return null;
+        }),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+      };
+      Object.defineProperty(window, 'localStorage', {
+        value: localStorageMock,
+        configurable: true,
+      });
+
       // mock fetch to return the SAMPLE_ARTWORKS for the component
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: async () => SAMPLE_ARTWORKS
+      global.fetch = jest.fn((url) => {
+        if (url.includes('/artist/email/')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ artist_id: '1' })
+          });
+        }
+        if (url.includes('/artwork/artist/')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => SAMPLE_ARTWORKS
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => SAMPLE_ARTWORKS
+        });
       });
     });
 

@@ -3,6 +3,9 @@ import { Box, Button, TextField, Typography, InputAdornment } from '@mui/materia
 import LockOutlined from '@mui/icons-material/LockOutlined';
 import '../styles/login.css';
 import { supabase } from '../lib/supabaseClient';
+import { extractTokensFromUrl } from '../utils/tokenParser';
+
+const API_HOST = process.env.REACT_APP_API_HOST ?? 'http://localhost:8081';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
@@ -10,58 +13,110 @@ const ResetPassword = () => {
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
-  const [hasRecoverySession, setHasRecoverySession] = useState(false);
+  const [tokens, setTokens] = useState({});
 
   useEffect(() => {
-    let active = true;
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
+    const checkSession = async () => {
+      console.log('[ResetPassword] Starting token detection...');
 
-    async function init() {
-      try {
-        if (code) {
-          await supabase.auth.exchangeCodeForSession(code);
-        } else if (window.location.hash && window.location.hash.includes('access_token')) {
-          const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-          const access_token = hashParams.get('access_token');
-          const refresh_token = hashParams.get('refresh_token');
-          if (access_token && refresh_token) {
-            await supabase.auth.setSession({ access_token, refresh_token });
-          }
-        }
-      } catch (_) {
-        // ignore; UI will show guidance message
-      } finally {
-        if (!active) return;
-        const { data } = await supabase.auth.getSession();
-        setHasRecoverySession(Boolean(data.session));
+      // 1. Check active Supabase session first
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        console.log('[ResetPassword] Found active session');
+        setTokens({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        });
+        return;
       }
-    }
-    init();
 
-    const { data } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
-        setHasRecoverySession(Boolean(session));
+      // 2. Extract tokens from URL using improved parser
+      const urlTokens = extractTokensFromUrl();
+      if (urlTokens) {
+        console.log('[ResetPassword] Found tokens in URL');
+        setTokens(urlTokens);
+        
+        // Try to set the session with extracted tokens
+        try {
+          const { error } = await supabase.auth.setSession(urlTokens);
+          if (error) {
+            console.error('[ResetPassword] Failed to set session:', error);
+            setError(`Authentication error: ${error.message}`);
+          } else {
+            console.log('[ResetPassword] Session set successfully');
+          }
+        } catch (err) {
+          console.error('[ResetPassword] Session setting failed:', err);
+          setError(`Failed to authenticate: ${err.message}`);
+        }
+        return;
+      }
+
+      // 3. Check for errors in URL
+      const fullUrl = window.location.href;
+      const errorMatch = fullUrl.match(/error=([^&]+)/);
+      const errorDescMatch = fullUrl.match(/error_description=([^&]+)/);
+
+      if (errorMatch) {
+        const errorMsg = decodeURIComponent(errorMatch[1]);
+        const errorDesc = errorDescMatch ? decodeURIComponent(errorDescMatch[1]) : '';
+        console.log('[ResetPassword] Found error in URL:', errorMsg);
+        setError(errorDesc || errorMsg);
+      }
+
+      console.log('[ResetPassword] No valid tokens found');
+    };
+
+    checkSession();
+
+    // 4. Listen for auth state changes
+    const authListener = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[ResetPassword] Auth event:', event);
+      if (session && session.access_token && session.refresh_token) {
+        setTokens({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        });
+        setError(''); // Clear any existing errors
       }
     });
-    return () => { data.subscription.unsubscribe(); active = false; };
+
+    return () => {
+      authListener?.data?.subscription?.unsubscribe();
+    };
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setStatus('');
+
     if (!password) { setError('Password is required'); return; }
     if (password !== confirm) { setError('Passwords do not match'); return; }
-    if (!hasRecoverySession) { setError('Auth session missing! Open the link from the email again.'); return; }
+    if (!tokens.access_token) { setError('Invalid or missing recovery link. Please try requesting a new password reset.'); return; }
+
     setLoading(true);
     try {
-      const { error: err } = await supabase.auth.updateUser({ password });
-      if (err) throw err;
+      const res = await fetch(`${API_HOST}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password,
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Password update failed');
+      }
+
       setStatus('Password updated. You can now log in.');
-      setTimeout(() => { window.location.hash = '#/login'; }, 1000);
+      setTimeout(() => { window.location.hash = '#/login'; }, 2000);
     } catch (e1) {
-      setError(e1.message || 'Failed to update password. Open the link from your email again.');
+      setError(e1.message || 'Failed to update password.');
     } finally {
       setLoading(false);
     }
@@ -73,9 +128,9 @@ const ResetPassword = () => {
 
       <Box className="login-card" component="section">
         <Typography variant="h4" className="login-title">Reset Password</Typography>
-        {!hasRecoverySession && (
-          <Typography variant="body2" className="login-subtitle" sx={{ mb: 1 }}>
-            Open the reset link from your email to continue.
+        {!tokens.access_token && (
+          <Typography variant="body2" className="login-subtitle" sx={{ mb: 1, color: 'warning.main' }}>
+            Warning: No recovery token found. Please ensure you clicked the link in your email.
           </Typography>
         )}
 
@@ -149,4 +204,3 @@ const ResetPassword = () => {
 };
 
 export default ResetPassword;
-

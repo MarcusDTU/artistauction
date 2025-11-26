@@ -15,3 +15,12 @@ export const getArtistByNumber = async (artist_number) => {
         .single();
     return { data, error };
 }
+
+export const getArtistByEmail = async (email) => {
+    const { data, error } = await supabase
+        .from('Artist')
+        .select('*')
+        .eq('email', email)
+        .single();
+    return { data, error };
+}

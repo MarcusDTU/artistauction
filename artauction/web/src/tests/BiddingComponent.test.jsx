@@ -5,6 +5,26 @@ import '@testing-library/jest-dom';
 import BiddingComponent from '../components/BiddingComponent';
 
 describe('BiddingComponent', () => {
+  beforeEach(() => {
+    // Mock localStorage to simulate logged in buyer
+    const localStorageMock = {
+      getItem: jest.fn((key) => {
+        if (key === 'access_token') return 'fake-token';
+        if (key === 'role') return 'buyer'; // Correct key name
+        return null;
+      }),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    };
+    Object.defineProperty(window, 'localStorage', {
+      value: localStorageMock,
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
   test('renders highest bid and Bid button is present and enabled', () => {
     render(<BiddingComponent initialBid={10} />);
     // the numeric value is rendered by the component without a dollar sign

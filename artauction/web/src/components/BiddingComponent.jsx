@@ -60,6 +60,11 @@ const BiddingComponent = ({ initialBid = 0, onBidUpdate, sold = false }) => {
     const [error, setError] = useState(null);
     const [submitting, setSubmitting] = useState(false);
 
+    // Auth check
+    const role = localStorage.getItem('role');
+    const isLoggedIn = !!localStorage.getItem('access_token');
+    const canBid = isLoggedIn && role === 'buyer';
+
     useEffect(() => {
         setHighest(Number(initialBid) || 0);
         setError(null);
@@ -95,6 +100,11 @@ const BiddingComponent = ({ initialBid = 0, onBidUpdate, sold = false }) => {
             setError('Artwork has been sold');
             return;
         }
+        if (!canBid) {
+            setError('You must be logged in as a buyer to place a bid');
+            return;
+        }
+
         const str = input === '' ? '0' : input;
         const parsed = Number(str);
         if (!Number.isFinite(parsed)) {
@@ -139,28 +149,42 @@ const BiddingComponent = ({ initialBid = 0, onBidUpdate, sold = false }) => {
                 Highest bid: <strong>{formatToTwo(highest)}</strong>
             </div>
 
-            <form onSubmit={handleSubmit} style={inputRow}>
-                <input
-                    type="text"
-                    inputMode="decimal"
-                    value={input}
-                    onChange={handleChange}
-                    placeholder={sold ? 'Artwork sold' : 'Enter your bid'}
-                    aria-label="bid amount"
-                    style={inputStyle}
-                    disabled={sold}
-                    readOnly={sold}
-                />
-                <button type="submit" disabled={submitting || sold} style={buttonStyle}>
-                    {sold ? 'Sold' : (submitting ? '...' : 'Bid')}
-                </button>
-            </form>
+            {canBid ? (
+                <form onSubmit={handleSubmit} style={inputRow}>
+                    <input
+                        type="text"
+                        inputMode="decimal"
+                        value={input}
+                        onChange={handleChange}
+                        placeholder={sold ? 'Artwork sold' : 'Enter your bid'}
+                        aria-label="bid amount"
+                        style={inputStyle}
+                        disabled={sold}
+                        readOnly={sold}
+                    />
+                    <button type="submit" disabled={submitting || sold} style={buttonStyle}>
+                        {sold ? 'Sold' : (submitting ? '...' : 'Bid')}
+                    </button>
+                </form>
+            ) : (
+                <div style={{ padding: '0.5rem', background: '#f5f5f5', borderRadius: 4, fontSize: '0.9rem', color: '#666' }}>
+                    {!isLoggedIn ? (
+                        <span><a href="#/login">Log in</a> to place a bid</span>
+                    ) : role === 'artist' ? (
+                        <span>Artists cannot place bids</span>
+                    ) : (
+                        <span>Only authorized buyers can bid</span>
+                    )}
+                </div>
+            )}
 
             {error && <div style={errorStyle}>{error}</div>}
             {sold && <div style={{ color: '#2e7d32', fontSize: '.95rem' }}><strong>Sold — bidding closed</strong></div>}
-            <div style={{ fontSize: '.85rem', color: '#666' }}>
-                Tip: bid must be strictly greater than the highest bid and have at most two decimals.
-            </div>
+            {canBid && (
+                <div style={{ fontSize: '.85rem', color: '#666' }}>
+                    Tip: bid must be strictly greater than the highest bid and have at most two decimals.
+                </div>
+            )}
         </div>
     );
 };

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Box, Button, TextField, Typography, InputAdornment } from '@mui/material';
 import MailOutline from '@mui/icons-material/MailOutline';
 import '../styles/login.css';
-import { supabase } from '../lib/supabaseClient';
 
 const ForgotPassword = () => {
   const [status, setStatus] = useState('');
@@ -16,12 +15,24 @@ const ForgotPassword = () => {
     setLoading(true);
     const form = new FormData(e.currentTarget);
     const email = form.get('email');
+    const API_HOST = process.env.REACT_APP_API_HOST ?? 'http://localhost:8081';
+
     try {
-      // Use origin+pathname only; Supabase will append recovery tokens in the hash.
-      // App.jsx will detect them and route to #/reset after setting the session.
-      const redirectTo = `${window.location.origin}${window.location.pathname}`;
-      const { error: err } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-      if (err) throw err;
+      // Include the reset hash in redirect URL for proper token parsing
+      const redirectTo = `${window.location.origin}${window.location.pathname}#/reset`;
+
+      const res = await fetch(`${API_HOST}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, redirectTo }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to send reset link');
+      }
+
       setStatus('Check your email for a password reset link.');
     } catch (e1) {
       setError(e1.message || 'Failed to send reset link');

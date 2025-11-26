@@ -51,17 +51,17 @@ describe('EditArtwork page', () => {
   test('secret price input defaults to 69420.00 and can be set', () => {
     renderForId('1');
 
-    // price input should initialize to DEFAULT_SECRET_PRICE
+    // price input should initialize to stored end_price from fallback artwork
     const priceInput = screen.getByLabelText(/Secret price/i);
-    expect(priceInput.value).toBe('69420.00');
+    expect(priceInput.value).toBe('1500.00');
 
     // set a new valid price
     fireEvent.change(priceInput, {target: {value: '123.45'}});
     const setBtn = screen.getByRole('button', {name: /^Set$/i});
     fireEvent.click(setBtn);
 
-    // stored price caption should reflect the new value
-    expect(screen.getByText(/Current stored price:/i)).toHaveTextContent('Current stored price: None (will default to 69420.00)');
+    // stored price caption should reflect the stored value from database
+    expect(screen.getByText(/Current stored price:/i)).toHaveTextContent('Current stored price: 1500.00');
     // input should be formatted to two decimals after set
     expect(priceInput.value).toBe('123.45');
   });
