@@ -11,17 +11,20 @@ const fallbackArtworks = [
     {
         id: 1,
         title: 'Sunset Over Lake',
-        imageUrl: 'https://images.unsplash.com/vector-1751914322815-32930cd495b9?q=80&w=400&auto=format&fit=crop'
+        imageUrl: 'https://images.unsplash.com/vector-1751914322815-32930cd495b9?q=80&w=400&auto=format&fit=crop',
+        end_price: 1500.00
     },
     {
         id: 2,
         title: 'Blue Portrait',
-        imageUrl: 'https://images.unsplash.com/vector-1738236597535-1e80f2c2af1c?q=80&w=400&auto=format&fit=crop'
+        imageUrl: 'https://images.unsplash.com/vector-1738236597535-1e80f2c2af1c?q=80&w=400&auto=format&fit=crop',
+        end_price: 2250.50
     },
     {
         id: 3,
         title: 'City Lights',
-        imageUrl: 'https://images.unsplash.com/vector-1752217168020-7c56583af863?q=80&w=400&auto=format&fit=crop'
+        imageUrl: 'https://images.unsplash.com/vector-1752217168020-7c56583af863?q=80&w=400&auto=format&fit=crop',
+        end_price: 3400.75
     }
 ];
 
@@ -43,8 +46,9 @@ const EditArtwork = () => {
 
     const [priceInput, setPriceInput] = useState(() => {
         if (!initialArtwork) return DEFAULT_SECRET_PRICE.toFixed(2);
-        return typeof initialArtwork.price !== 'undefined'
-            ? Number(initialArtwork.price).toFixed(2)
+        const storedPrice = initialArtwork.end_price ?? initialArtwork.price;
+        return typeof storedPrice !== 'undefined' && storedPrice !== null
+            ? Number(storedPrice).toFixed(2)
             : DEFAULT_SECRET_PRICE.toFixed(2);
     });
 
@@ -303,7 +307,12 @@ const EditArtwork = () => {
                     </Box>
 
                     <Typography variant="caption" sx={{display: 'block', mt: 1, color: '#666'}}>
-                        Current stored price: {typeof artwork.price !== 'undefined' ? Number(artwork.price).toFixed(2) : 'None (will default to ' + DEFAULT_SECRET_PRICE.toFixed(2) + ')'}
+                        Current stored price: {(() => {
+                            const storedPrice = artwork?.end_price ?? artwork?.price;
+                            return typeof storedPrice !== 'undefined' && storedPrice !== null 
+                                ? Number(storedPrice).toFixed(2) 
+                                : 'None (will default to ' + DEFAULT_SECRET_PRICE.toFixed(2) + ')';
+                        })()}
                     </Typography>
                 </Box>
 
