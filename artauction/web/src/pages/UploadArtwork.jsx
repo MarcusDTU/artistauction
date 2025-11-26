@@ -1,4 +1,4 @@
-import React, {useRef, useState, useEffect} from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import TextBox from "../components/TextBox";
 import NumberBox from "../components/NumberBox";
@@ -8,7 +8,7 @@ const API_HOST = process.env.REACT_APP_API_HOST ?? 'http://localhost:8081';
 const ARTWORK_URL = process.env.REACT_APP_ARTWORK_URL ?? `${API_HOST}/artwork`;
 
 const styles = {
-    page: {padding: 20, fontFamily: 'Arial, sans-serif', maxWidth: 1000, margin: '0 auto'},
+    page: { padding: 20, fontFamily: 'Arial, sans-serif', maxWidth: 1000, margin: '0 auto' },
     box: {
         border: '2px dashed #cbd5e1',
         borderRadius: 8,
@@ -22,12 +22,12 @@ const styles = {
         minHeight: 160,
         transition: 'border-color .15s, background .15s'
     },
-    boxHover: {borderColor: '#60a5fa', background: '#eff8ff'},
-    title: {fontSize: 18, fontWeight: 600, marginBottom: 8},
-    hint: {fontSize: 13, color: '#6b7280'},
-    previews: {marginTop: 20, display: 'flex', gap: 12, flexWrap: 'wrap'},
-    thumb: {width: 140, height: 100, objectFit: 'cover', borderRadius: 6, border: '1px solid #e5e7eb'},
-    info: {marginTop: 8, fontSize: 13, color: '#374151'},
+    boxHover: { borderColor: '#60a5fa', background: '#eff8ff' },
+    title: { fontSize: 18, fontWeight: 600, marginBottom: 8 },
+    hint: { fontSize: 13, color: '#6b7280' },
+    previews: { marginTop: 20, display: 'flex', gap: 12, flexWrap: 'wrap' },
+    thumb: { width: 140, height: 100, objectFit: 'cover', borderRadius: 6, border: '1px solid #e5e7eb' },
+    info: { marginTop: 8, fontSize: 13, color: '#374151' },
     clearBtn: {
         marginTop: 16,
         padding: '8px 12px',
@@ -163,10 +163,24 @@ const UploadArtwork = () => {
 
             const firstImageUrl = imageUrls.length ? imageUrls[0] : null;
 
+            // Fetch artist ID based on logged-in email
+            const email = localStorage.getItem('user_email');
+            if (!email) {
+                alert('You must be logged in to upload artwork');
+                return;
+            }
+
+            const artistRes = await fetch(`${API_HOST}/artist/email/${encodeURIComponent(email)}`);
+            if (!artistRes.ok) {
+                throw new Error('Could not find artist account details');
+            }
+            const artistData = await artistRes.json();
+            const artistId = artistData.artist_id || artistData.id;
+
             const payload = {
                 title: titleVal,
                 description: descVal,
-                artist_id: 1, // hardcoded for demo purposes
+                artist_id: artistId,
                 end_price: secretPrice !== null ? secretPrice : null,
                 image_url: firstImageUrl
             };

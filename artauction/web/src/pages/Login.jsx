@@ -5,14 +5,14 @@ import LockOutlined from '@mui/icons-material/LockOutlined';
 import PersonOutline from '@mui/icons-material/PersonOutline';
 import '../styles/login.css';
 import logo from '../assets/logo.png';
-import { supabase } from '../lib/supabaseClient';
+
+const API_HOST = process.env.REACT_APP_API_HOST ?? 'http://localhost:8081';
 
 const Login = () => {
   const [tab, setTab] = useState(0); // 0 = Login, 1 = Sign Up
   const [signupErrors, setSignupErrors] = useState({});
   const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(false);
-  const isTest = process.env.NODE_ENV === 'test';
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -21,29 +21,42 @@ const Login = () => {
     const form = new FormData(e.currentTarget);
     const email = form.get('email');
     const password = form.get('password');
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setAuthError(error.message);
-      setLoading(false);
-      return;
-    }
+
     try {
-      const userId = data.user?.id;
-      if (userId) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role, full_name')
-          .eq('id', userId)
-          .single();
-        if (profile?.role) localStorage.setItem('role', profile.role);
-        if (profile?.full_name) localStorage.setItem('full_name', profile.full_name);
+      const res = await fetch(`${API_HOST}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Login failed');
       }
-      if (isTest) {
-        // Match legacy test expectation that login triggers an alert
-        // eslint-disable-next-line no-alert
-        alert('Signed in (demo)');
+
+      // Store session and profile info
+      if (data.session) {
+        localStorage.setItem('access_token', data.session.access_token);
+        localStorage.setItem('refresh_token', data.session.refresh_token);
       }
+
+      if (data.profile) {
+        localStorage.setItem('role', data.profile.role);
+        localStorage.setItem('full_name', data.profile.full_name);
+      }
+
+      // Store email for dashboard access
+      if (data.user?.email) {
+        localStorage.setItem('user_email', data.user.email);
+      } else {
+        localStorage.setItem('user_email', email);
+      }
+
+      window.dispatchEvent(new Event('auth-change'));
       window.location.hash = '#/home';
+    } catch (err) {
+      setAuthError(err.message);
     } finally {
       setLoading(false);
     }
@@ -57,38 +70,49 @@ const Login = () => {
     const email = form.get('email');
     const password = form.get('password');
     const confirm = form.get('confirm');
+
+    // Default role is buyer
+    const role = 'buyer';
+
     const errors = {};
     if (!name) errors.name = 'Name is required';
     if (!email) errors.email = 'Email is required';
     if (!password) errors.password = 'Password is required';
     if (password !== confirm) errors.confirm = 'Passwords do not match';
+
     setSignupErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: name } },
+      const res = await fetch(`${API_HOST}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          full_name: name,
+          role
+        }),
       });
-      if (error) throw error;
 
-      // If email confirmation is enabled, session may be null
-      const userId = data.user?.id;
-      if (userId && data.session) {
-        await supabase.from('profiles').update({ full_name: name }).eq('id', userId);
+      let data;
+      try {
+        data = await res.json();
+      } catch (parseError) {
+        // If response is not JSON (e.g. 500 error page), treat as error
+        throw new Error(`Server error: ${res.status} ${res.statusText}`);
       }
-      if (isTest) {
-        // Keep tests green by matching old copy
-        // eslint-disable-next-line no-alert
-        alert('Account created (demo)');
-      } else {
-        // eslint-disable-next-line no-alert
-        alert('Account created. Check your email to confirm.');
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Signup failed');
       }
-      setTab(0);
+
+      // Success
+      alert('Account created successfully! Please check your email to confirm your account before logging in.');
+      setTab(0); // Switch to login tab
     } catch (err) {
+      console.error("Signup Error:", err);
       setAuthError(err.message || 'Failed to create account');
     } finally {
       setLoading(false);

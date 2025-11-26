@@ -4,64 +4,109 @@ import LockOutlined from '@mui/icons-material/LockOutlined';
 import '../styles/login.css';
 import { supabase } from '../lib/supabaseClient';
 
+const API_HOST = process.env.REACT_APP_API_HOST ?? 'http://localhost:8081';
+
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
-  const [hasRecoverySession, setHasRecoverySession] = useState(false);
+  const [tokens, setTokens] = useState({});
 
   useEffect(() => {
-    let active = true;
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
+    const checkSession = async () => {
+      console.log('[ResetPassword] Checking session...');
 
-    async function init() {
-      try {
-        if (code) {
-          await supabase.auth.exchangeCodeForSession(code);
-        } else if (window.location.hash && window.location.hash.includes('access_token')) {
-          const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-          const access_token = hashParams.get('access_token');
-          const refresh_token = hashParams.get('refresh_token');
-          if (access_token && refresh_token) {
-            await supabase.auth.setSession({ access_token, refresh_token });
-          }
-        }
-      } catch (_) {
-        // ignore; UI will show guidance message
-      } finally {
-        if (!active) return;
-        const { data } = await supabase.auth.getSession();
-        setHasRecoverySession(Boolean(data.session));
+      // 1. Check active Supabase session (most reliable if App.jsx already handled the hash)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        console.log('[ResetPassword] Found active session');
+        setTokens({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        });
+        return;
       }
-    }
-    init();
 
-    const { data } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
-        setHasRecoverySession(Boolean(session));
+      // 2. Fallback: Parse URL hash manually using regex for robustness
+      const fullUrl = window.location.href;
+      console.log('[ResetPassword] Full URL:', fullUrl);
+
+      // Check for error passed from App.jsx or Supabase
+      const errorMatch = fullUrl.match(/error=([^&]+)/);
+      const errorDescMatch = fullUrl.match(/error_description=([^&]+)/);
+
+      if (errorMatch) {
+        const errorMsg = decodeURIComponent(errorMatch[1]);
+        const errorDesc = errorDescMatch ? decodeURIComponent(errorDescMatch[1]) : '';
+        console.log('[ResetPassword] Found error in URL:', errorMsg);
+        setError(errorDesc || errorMsg); // Prefer description if available
+        // We don't return here, in case tokens are also present (though unlikely to work if error exists)
+      }
+
+      const atMatch = fullUrl.match(/access_token=([^&]+)/);
+      const rtMatch = fullUrl.match(/refresh_token=([^&]+)/);
+
+      const at = atMatch ? decodeURIComponent(atMatch[1]) : null;
+      const rt = rtMatch ? decodeURIComponent(rtMatch[1]) : null;
+
+      if (at && rt) {
+        console.log('[ResetPassword] Found tokens via regex');
+        setTokens({ access_token: at, refresh_token: rt });
+        return;
+      }
+    };
+
+    checkSession();
+
+    // 3. Listen for auth state changes (Critical for race conditions)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[ResetPassword] Auth event:', event);
+      if (session) {
+        setTokens({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        });
       }
     });
-    return () => { data.subscription.unsubscribe(); active = false; };
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setStatus('');
+
     if (!password) { setError('Password is required'); return; }
     if (password !== confirm) { setError('Passwords do not match'); return; }
-    if (!hasRecoverySession) { setError('Auth session missing! Open the link from the email again.'); return; }
+    if (!tokens.access_token) { setError('Invalid or missing recovery link. Please try requesting a new password reset.'); return; }
+
     setLoading(true);
     try {
-      const { error: err } = await supabase.auth.updateUser({ password });
-      if (err) throw err;
+      const res = await fetch(`${API_HOST}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password,
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Password update failed');
+      }
+
       setStatus('Password updated. You can now log in.');
-      setTimeout(() => { window.location.hash = '#/login'; }, 1000);
+      setTimeout(() => { window.location.hash = '#/login'; }, 2000);
     } catch (e1) {
-      setError(e1.message || 'Failed to update password. Open the link from your email again.');
+      setError(e1.message || 'Failed to update password.');
     } finally {
       setLoading(false);
     }
@@ -73,9 +118,9 @@ const ResetPassword = () => {
 
       <Box className="login-card" component="section">
         <Typography variant="h4" className="login-title">Reset Password</Typography>
-        {!hasRecoverySession && (
-          <Typography variant="body2" className="login-subtitle" sx={{ mb: 1 }}>
-            Open the reset link from your email to continue.
+        {!tokens.access_token && (
+          <Typography variant="body2" className="login-subtitle" sx={{ mb: 1, color: 'warning.main' }}>
+            Warning: No recovery token found. Please ensure you clicked the link in your email.
           </Typography>
         )}
 
@@ -149,4 +194,3 @@ const ResetPassword = () => {
 };
 
 export default ResetPassword;
-
