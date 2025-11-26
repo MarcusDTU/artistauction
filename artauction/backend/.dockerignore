@@ -1,0 +1,38 @@
+# Node / JS
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.pnpm-debug.log
+
+# Environment / secrets
+.env
+.env.*
+
+# Test / coverage / build artifacts
+coverage
+coverage/*
+dist
+build
+out
+target
+
+# Logs
+*.log
+
+# IDEs / editors
+.idea
+.vscode
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+
+# Git / misc
+.git
+.gitignore
+
+# Do not include the dockerignore file itself in context
+.dockerignore
