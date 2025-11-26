@@ -6,7 +6,7 @@ import BiddingComponent from "../components/BiddingComponent";
 const API_HOST = process.env.REACT_APP_API_HOST ?? 'http://localhost:8081';
 const AUCTION_URL = process.env.REACT_APP_AUCTION_URL ?? `${API_HOST}/auction`;
 const BID_URL = process.env.REACT_APP_BID_URL ?? `${API_HOST}/bid`;
-const ARTWORK_URL = process.env.REACT_APP_ARTWORK_URL ?? `${API_HOST}/artwork`;
+//const ARTWORK_URL = process.env.REACT_APP_ARTWORK_URL ?? `${API_HOST}/artwork`;
 
 const normalizeArtwork = (raw = {}) => {
     const statusRaw = raw.status ?? raw.availability ?? '';

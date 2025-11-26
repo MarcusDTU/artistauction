@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Button, TextField, Typography, InputAdornment } from '@mui/material';
 import MailOutline from '@mui/icons-material/MailOutline';
 import '../styles/login.css';
-import { supabase } from '../lib/supabaseClient';
+//import { supabase } from '../lib/supabaseClient';
 
 const ForgotPassword = () => {
   const [status, setStatus] = useState('');

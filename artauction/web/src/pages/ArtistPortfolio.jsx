@@ -71,6 +71,7 @@ const ArtistPortfolio = () => {
   const timeoutRef = useRef(null);
 
   useEffect(() => {
+      if(!artist) return;
     let mounted = true;
 
     const shouldFetchArtist = !artist || !artist.bio;
