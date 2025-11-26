@@ -3,6 +3,7 @@ import { Box, Button, TextField, Typography, InputAdornment } from '@mui/materia
 import LockOutlined from '@mui/icons-material/LockOutlined';
 import '../styles/login.css';
 import { supabase } from '../lib/supabaseClient';
+import { extractTokensFromUrl } from '../utils/tokenParser';
 
 const API_HOST = process.env.REACT_APP_API_HOST ?? 'http://localhost:8081';
 
@@ -16,9 +17,9 @@ const ResetPassword = () => {
 
   useEffect(() => {
     const checkSession = async () => {
-      console.log('[ResetPassword] Checking session...');
+      console.log('[ResetPassword] Starting token detection...');
 
-      // 1. Check active Supabase session (most reliable if App.jsx already handled the hash)
+      // 1. Check active Supabase session first
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         console.log('[ResetPassword] Found active session');
@@ -29,11 +30,30 @@ const ResetPassword = () => {
         return;
       }
 
-      // 2. Fallback: Parse URL hash manually using regex for robustness
-      const fullUrl = window.location.href;
-      console.log('[ResetPassword] Full URL:', fullUrl);
+      // 2. Extract tokens from URL using improved parser
+      const urlTokens = extractTokensFromUrl();
+      if (urlTokens) {
+        console.log('[ResetPassword] Found tokens in URL');
+        setTokens(urlTokens);
+        
+        // Try to set the session with extracted tokens
+        try {
+          const { error } = await supabase.auth.setSession(urlTokens);
+          if (error) {
+            console.error('[ResetPassword] Failed to set session:', error);
+            setError(`Authentication error: ${error.message}`);
+          } else {
+            console.log('[ResetPassword] Session set successfully');
+          }
+        } catch (err) {
+          console.error('[ResetPassword] Session setting failed:', err);
+          setError(`Failed to authenticate: ${err.message}`);
+        }
+        return;
+      }
 
-      // Check for error passed from App.jsx or Supabase
+      // 3. Check for errors in URL
+      const fullUrl = window.location.href;
       const errorMatch = fullUrl.match(/error=([^&]+)/);
       const errorDescMatch = fullUrl.match(/error_description=([^&]+)/);
 
@@ -41,38 +61,28 @@ const ResetPassword = () => {
         const errorMsg = decodeURIComponent(errorMatch[1]);
         const errorDesc = errorDescMatch ? decodeURIComponent(errorDescMatch[1]) : '';
         console.log('[ResetPassword] Found error in URL:', errorMsg);
-        setError(errorDesc || errorMsg); // Prefer description if available
-        // We don't return here, in case tokens are also present (though unlikely to work if error exists)
+        setError(errorDesc || errorMsg);
       }
 
-      const atMatch = fullUrl.match(/access_token=([^&]+)/);
-      const rtMatch = fullUrl.match(/refresh_token=([^&]+)/);
-
-      const at = atMatch ? decodeURIComponent(atMatch[1]) : null;
-      const rt = rtMatch ? decodeURIComponent(rtMatch[1]) : null;
-
-      if (at && rt) {
-        console.log('[ResetPassword] Found tokens via regex');
-        setTokens({ access_token: at, refresh_token: rt });
-        return;
-      }
+      console.log('[ResetPassword] No valid tokens found');
     };
 
     checkSession();
 
-    // 3. Listen for auth state changes (Critical for race conditions)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    // 4. Listen for auth state changes
+    const authListener = supabase.auth.onAuthStateChange((event, session) => {
       console.log('[ResetPassword] Auth event:', event);
-      if (session) {
+      if (session && session.access_token && session.refresh_token) {
         setTokens({
           access_token: session.access_token,
           refresh_token: session.refresh_token
         });
+        setError(''); // Clear any existing errors
       }
     });
 
     return () => {
-      subscription.unsubscribe();
+      authListener?.data?.subscription?.unsubscribe();
     };
   }, []);
 

@@ -19,9 +19,8 @@ const ForgotPassword = () => {
     const API_HOST = process.env.REACT_APP_API_HOST ?? 'http://localhost:8081';
 
     try {
-      // Use origin+pathname only; Supabase will append recovery tokens in the hash.
-      // App.jsx will detect them and route to #/reset after setting the session.
-      const redirectTo = `${window.location.origin}${window.location.pathname}`;
+      // Include the reset hash in redirect URL for proper token parsing
+      const redirectTo = `${window.location.origin}${window.location.pathname}#/reset`;
 
       const res = await fetch(`${API_HOST}/auth/forgot-password`, {
         method: 'POST',
