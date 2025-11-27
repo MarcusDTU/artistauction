@@ -11,9 +11,9 @@ WORKDIR /app
 
 # Copy only package manifest(s) first to leverage Docker layer caching.
 # This prevents reinstalling dependencies when only source files change.
-COPY package*.json ./
+COPY package.json package-lock.json ./
 # Install production dependencies deterministically
-RUN npm ci --production
+RUN npm ci --omit=dev
 
 # Copy application source into the image after installing deps so source
 # changes do not invalidate the dependency layer.
