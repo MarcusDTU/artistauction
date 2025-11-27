@@ -1,0 +1,24 @@
+# yaml
+version: '3.8'  # Compose file format version
+
+services:
+  backend:
+    # Build configuration:
+    # - `context` is the directory sent to the Docker daemon as the build context.
+    #   When running `docker compose` from the project root, `context: .` refers to that root.
+    #   If you run compose from another directory, adjust the path or run from the project root.
+    # - `dockerfile` is the Dockerfile name relative to the build context.
+    build:
+      context: .            # Build context directory (where Docker looks for files)
+      dockerfile: Dockerfile # Dockerfile to use inside the build context
+
+    # Port mapping: map container port 8081 to host port 8081
+    ports:
+      - "8081:8081"
+
+    # Load environment variables from `.env` in the same directory as the compose file.
+    env_file:
+      - .env
+
+    # Restart policy for the container
+    restart: unless-stopped
