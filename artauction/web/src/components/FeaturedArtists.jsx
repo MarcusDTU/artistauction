@@ -2,14 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import '../styles/artists.css';
 import { Link } from 'react-router-dom';
-
-const PLACEHOLDER =
-  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=400&auto=format&fit=crop';
+import { getArtistImage } from '../utils/artistImageUtils';
 
 const normalizeArtist = (a) => ({
   id: a.artist_id ?? a.id ?? a.artist_number ?? a.artistNumber ?? a.name?.toLowerCase().split(' ')[0],
   name: a.name ?? a.artist_name ?? `${a.first_name ?? ''} ${a.last_name ?? ''}`.trim() ?? 'Unknown',
-  image: a.image_url ?? a.image ?? PLACEHOLDER,
+  image: a.image_url ?? a.image ?? getArtistImage(a.artist_id ?? a.id, a.name),
 });
 
 const FeaturedArtists = () => {

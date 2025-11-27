@@ -2,9 +2,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import PreviewArtworkList from '../components/PreviewArtworkList';
+import { ARTIST_IMAGES, getArtistImage } from '../utils/artistImageUtils';
 
-const PLACEHOLDER_IMAGE =
-  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=400&auto=format&fit=crop';
 
 const normalizeArtist = (raw, fallbackId) => {
   if (!raw) return null;
@@ -14,7 +13,7 @@ const normalizeArtist = (raw, fallbackId) => {
       (raw.name ?? raw.artist_name ?? `${raw.first_name ?? ''} ${raw.last_name ?? ''}`.trim()) ||
       'Unknown',
     bio: raw.bio ?? raw.description ?? raw.artist_bio ?? '',
-    image: raw.image_url ?? raw.image ?? PLACEHOLDER_IMAGE,
+    image: raw.image_url ?? raw.image ?? getArtistImage(raw.artist_id ?? raw.id ?? fallbackId, raw.name ?? raw.artist_name),
     artworks: Array.isArray(raw.artworks) ? raw.artworks : [], // backend may not return artworks yet
     raw,
   };
@@ -143,7 +142,7 @@ const ArtistPortfolio = () => {
               return {
                 ...a,
                 id: a.id ?? a.artwork_id ?? a._id ?? a.slug ?? a.title,
-                image: a.image ?? a.image_url ?? a.url ?? a.thumbnail ?? PLACEHOLDER_IMAGE,
+                image: a.image ?? a.image_url ?? a.url ?? a.thumbnail ?? ARTIST_IMAGES[0],
                 title: a.title ?? a.name ?? 'Untitled',
                 artistName: normalized.name,
                 artist: { id: normalized.id, name: normalized.name },
@@ -211,7 +210,7 @@ const ArtistPortfolio = () => {
         <section>
           <h2>About</h2>
           <p>{artist.bio || 'No bio available.'}</p>
-          <img src={artist.image || PLACEHOLDER_IMAGE} alt={artist.name} style={{ maxWidth: 200, borderRadius: 6 }} />
+          <img src={artist.image || ARTIST_IMAGES[0]} alt={artist.name} style={{ maxWidth: 200, borderRadius: 6 }} />
         </section>
 
         <section>
